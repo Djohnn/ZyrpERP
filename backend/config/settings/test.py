@@ -13,7 +13,7 @@ DATABASES = {
         'USER': config('POSTGRES_TEST_USER', default='zyrp_test'),
         'PASSWORD': config('POSTGRES_TEST_PASSWORD', default='zyrp_test_dev'),
         'HOST': config('POSTGRES_HOST', default='127.0.0.1'),
-        'PORT': config('POSTGRES_EXTERNAL_PORT', default='5433'),
+        'PORT': config('POSTGRES_PORT', default='5433'),
         'TEST': {'NAME': config('POSTGRES_TEST_DB', default='test_zyrp')},
     },
 }

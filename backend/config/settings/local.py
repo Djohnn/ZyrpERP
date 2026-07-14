@@ -11,7 +11,7 @@ DATABASES = {
         'USER': config('POSTGRES_APP_USER', default='zyrp_app'),
         'PASSWORD': config('POSTGRES_APP_PASSWORD', default='zyrp_app_dev'),
         'HOST': config('POSTGRES_HOST', default='127.0.0.1'),
-        'PORT': config('POSTGRES_EXTERNAL_PORT', default='5433'),
+        'PORT': config('POSTGRES_PORT', default='5433'),
         'OPTIONS': {'connect_timeout': 5},
     },
 }

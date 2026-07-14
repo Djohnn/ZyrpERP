@@ -21,11 +21,15 @@ Registro oficial dos documentos da Enterprise Commerce Platform.
 | SRS-001 | System Requirements Specification | 0.1.0 | Draft | `04_Requirements/SRS-001_System_Requirements_v0.1.0.md` |
 | TRACEABILITY | Requirements Traceability Matrix | 0.1.0 | Draft | `04_Requirements/TRACEABILITY_MATRIX.md` |
 | API-001 | API Standards | 0.1.0 | Draft | `05_API/API-001_API_Standards_v0.1.0.md` |
-| TST-001 | Test Strategy | — | Planned | `07_Testing/TST-001_Test_Strategy_v0.1.0.md` |
+| DIA-001–005 | Architecture and Process Diagrams | 0.1.0 | Review | `06_Diagrams/` |
+| TST-001 | Test Strategy | 0.1.0 | Draft | `07_Testing/TST-001_Test_Strategy_v0.1.0.md` |
+| TEST-CATALOG | Test Catalog | 0.1.0 | Draft | `07_Testing/TEST_CATALOG.md` |
 | SEC-001 | Security and Multi-Tenancy | 0.1.0 | Draft | `08_Security/SEC-001_Security_Multitenancy_v0.1.0.md` |
 | THREAT-MODEL | STRIDE Threat Model | 0.1.0 | Draft | `08_Security/THREAT_MODEL.md` |
-| OPS-001 | Operations and Observability | — | Planned | `09_Operations/OPS-001_Operations_Observability_v0.1.0.md` |
-| REL-001 | Release Strategy | — | Planned | `10_Releases/REL-001_Release_Strategy_v0.1.0.md` |
+| DATA-CLASSIFICATION | Data Classification | 0.1.0 | Draft | `08_Security/DATA_CLASSIFICATION.md` |
+| OPS-001 | Operations and Observability | 0.1.0 | Draft | `09_Operations/OPS-001_Operations_Observability_v0.1.0.md` |
+| INCIDENT-RESPONSE | Incident Response | 0.1.0 | Draft | `09_Operations/INCIDENT_RESPONSE.md` |
+| REL-001 | Release Strategy | 0.1.0 | Draft | `10_Releases/REL-001_Release_Strategy_v0.1.0.md` |
 
 ## Material histórico
 

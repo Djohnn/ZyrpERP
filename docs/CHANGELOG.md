@@ -14,6 +14,9 @@ Todas as mudanças relevantes na base documental são registradas aqui.
 - Seis ADRs fundamentais, SAD, Engineering Handbook e desenho de domínio.
 - PRD Master, SRS e matriz inicial de rastreabilidade.
 - Padrões REST/OpenAPI, catálogo de erros, segurança multi-tenant e threat model.
+- Estratégia e catálogo de testes, incluindo isolamento, IDOR, offline, fiscal e restauração.
+- Operações, observabilidade, resposta a incidentes e estratégia de releases.
+- Diagramas de contexto, contêineres, dependências, sincronização do PDV e estados fiscais.
 
 ### Decisions
 

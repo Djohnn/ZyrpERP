@@ -7,7 +7,7 @@ servers:
   - url: http://localhost:8000/api/v1
     description: Local
   - url: https://staging.example.invalid/api/v1
-    description: Staging placeholder domain, never production
+    description: Reserved non-resolving example for the future staging environment
 paths:
   /health:
     get:
@@ -57,4 +57,3 @@ components:
         correlation_id: { type: string }
 security:
   - bearerAuth: []
-

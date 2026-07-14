@@ -9,6 +9,7 @@ set -euo pipefail
 psql_host_args=()
 if [[ -n "${POSTGRES_HOST:-}" ]]; then
   psql_host_args+=(--host "${POSTGRES_HOST}" --port "${POSTGRES_PORT:-5432}")
+  export PGPASSWORD="${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required for remote bootstrap}"
 fi
 
 psql --set ON_ERROR_STOP=1 \

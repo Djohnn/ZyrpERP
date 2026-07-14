@@ -20,9 +20,10 @@ Registro oficial dos documentos da Enterprise Commerce Platform.
 | EVENT-CATALOG | Domain Event Catalog | 0.1.0 | Draft | `03_Domain/DOMAIN_EVENT_CATALOG.md` |
 | SRS-001 | System Requirements Specification | 0.1.0 | Draft | `04_Requirements/SRS-001_System_Requirements_v0.1.0.md` |
 | TRACEABILITY | Requirements Traceability Matrix | 0.1.0 | Draft | `04_Requirements/TRACEABILITY_MATRIX.md` |
-| API-001 | API Standards | — | Planned | `05_API/API-001_API_Standards_v0.1.0.md` |
+| API-001 | API Standards | 0.1.0 | Draft | `05_API/API-001_API_Standards_v0.1.0.md` |
 | TST-001 | Test Strategy | — | Planned | `07_Testing/TST-001_Test_Strategy_v0.1.0.md` |
-| SEC-001 | Security and Multi-Tenancy | — | Planned | `08_Security/SEC-001_Security_Multitenancy_v0.1.0.md` |
+| SEC-001 | Security and Multi-Tenancy | 0.1.0 | Draft | `08_Security/SEC-001_Security_Multitenancy_v0.1.0.md` |
+| THREAT-MODEL | STRIDE Threat Model | 0.1.0 | Draft | `08_Security/THREAT_MODEL.md` |
 | OPS-001 | Operations and Observability | — | Planned | `09_Operations/OPS-001_Operations_Observability_v0.1.0.md` |
 | REL-001 | Release Strategy | — | Planned | `10_Releases/REL-001_Release_Strategy_v0.1.0.md` |
 

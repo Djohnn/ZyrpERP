@@ -13,6 +13,7 @@ Todas as mudanças relevantes na base documental são registradas aqui.
 - Primeiros drafts de governança e produto.
 - Seis ADRs fundamentais, SAD, Engineering Handbook e desenho de domínio.
 - PRD Master, SRS e matriz inicial de rastreabilidade.
+- Padrões REST/OpenAPI, catálogo de erros, segurança multi-tenant e threat model.
 
 ### Decisions
 

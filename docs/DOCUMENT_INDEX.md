@@ -1,6 +1,6 @@
 # Documentation Index
 
-Registro oficial dos documentos da Enterprise Commerce Platform.
+Registro oficial dos documentos do Zyrp.
 
 | Código | Documento | Versão | Status | Caminho |
 |---|---|---:|---|---|

@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Enterprise Commerce Platform API
+  title: Zyrp API
   version: 0.1.0
   description: Initial contract skeleton. Domain operations require capability PRDs.
 servers:

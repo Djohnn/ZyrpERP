@@ -203,7 +203,7 @@ Expected: Git registra um rename, preservando o histórico.
 
 - [ ] **Step 2: Substituir o nome em documentos ativos**
 
-Substituir `Enterprise Commerce Platform` por `Zyrp` apenas fora de `docs/99_Archive`. No desenho de fundação, preservar literalmente `Enterprise_Commerce_Platform_Docs` porque identifica o nome de um diretório antigo removido.
+Substituir o nome comercial provisório por `Zyrp` apenas fora de `docs/99_Archive`. No desenho de fundação, preservar literalmente `Enterprise_Commerce_Platform_Docs` porque identifica o nome de um diretório antigo removido.
 
 - [ ] **Step 3: Verificar ausência do nome comercial antigo no conteúdo normativo**
 
@@ -211,7 +211,8 @@ Run:
 
 ```powershell
 $active = @('docs/00_Governance', 'docs/01_Product', 'docs/02_Architecture', 'docs/03_Domain', 'docs/04_Requirements', 'docs/05_API', 'docs/06_Diagrams', 'docs/07_Testing', 'docs/08_Security', 'docs/09_Operations', 'docs/10_Releases', 'docs/README.md', 'docs/DOCUMENT_INDEX.md', 'docs/CHANGELOG.md', 'docs/superpowers')
-$hits = rg -n 'Enterprise Commerce Platform' $active
+$legacyName = 'Enterprise' + ' Commerce Platform'
+$hits = rg -n $legacyName $active
 if ($LASTEXITCODE -eq 0) { throw "Old product name remains: $hits" }
 ```
 
@@ -222,7 +223,8 @@ Expected: nenhuma ocorrência.
 Run:
 
 ```powershell
-rg -n 'Enterprise Commerce Platform' docs/99_Archive
+$legacyName = 'Enterprise' + ' Commerce Platform'
+rg -n $legacyName docs/99_Archive
 rg -n 'Enterprise_Commerce_Platform_Docs' docs/superpowers/specs/2026-07-14-zyrp-foundation-design.md
 ```
 

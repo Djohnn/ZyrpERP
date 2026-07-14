@@ -1,6 +1,6 @@
-# Enterprise Commerce Platform — Documentação
+# Zyrp — Documentação
 
-Esta pasta é a fonte oficial de verdade da Enterprise Commerce Platform (ECP), um SaaS brasileiro de gestão comercial inicialmente direcionado a casas de rações.
+Esta pasta é a fonte oficial de verdade do Zyrp, um SaaS brasileiro de gestão comercial inicialmente direcionado a casas de rações.
 
 ## Estado atual
 
@@ -53,4 +53,3 @@ Somente documentos em `Baseline` são normativos. Documentos `Draft` e `Review` 
 - O cliente contrata e paga seu provedor fiscal no MVP.
 - O PDV opera online por padrão e usa contingência offline restrita.
 - A hierarquia SaaS é `Tenant → Empresa → Filial`.
-

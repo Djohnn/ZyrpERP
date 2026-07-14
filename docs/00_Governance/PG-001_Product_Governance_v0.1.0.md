@@ -14,7 +14,7 @@
 
 ## 1. Objetivo
 
-Estabelecer autoridade, responsabilidades, fluxo decisório e critérios de qualidade para evolução sustentável da Enterprise Commerce Platform.
+Estabelecer autoridade, responsabilidades, fluxo decisório e critérios de qualidade para evolução sustentável do Zyrp.
 
 ## 2. Princípios
 
@@ -91,4 +91,3 @@ Exceções têm prazo, responsável, risco explícito e plano de remoção. Exce
 | Versão | Data | Alteração |
 |---|---|---|
 | 0.1.0 | 2026-07-14 | Governança inicial do produto. |
-

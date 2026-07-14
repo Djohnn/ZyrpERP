@@ -9,7 +9,7 @@
 
 ## Objetivo
 
-Consolidar uma base documental profissional e rastreável para iniciar a implementação da Enterprise Commerce Platform sem antecipar código de produto.
+Consolidar uma base documental profissional e rastreável para iniciar a implementação do Zyrp sem antecipar código de produto.
 
 ## Escopo entregue
 
@@ -50,4 +50,3 @@ Criar o plano técnico do Sprint 0: estrutura do repositório de aplicação, am
 
 - `MILESTONE-001_MANIFEST.txt`: inventário de arquivos, tamanhos e hashes.
 - `Milestone_001_Documentation_Foundation_v0.1.0.zip`: pacote distribuível criado fora de `docs`.
-

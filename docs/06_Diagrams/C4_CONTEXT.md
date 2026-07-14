@@ -10,7 +10,7 @@ flowchart LR
     gestor["Gestor do estabelecimento"]
     contador["Contador"]
     suporte["Equipe da plataforma"]
-    erp["Enterprise Commerce Platform\nERP SaaS multi-tenant"]
+    erp["Zyrp\nERP SaaS multi-tenant"]
     fiscal["Provedor fiscal externo"]
     sefaz["SEFAZ"]
     pagamentos["Provedores de pagamento"]
@@ -32,4 +32,3 @@ flowchart LR
 - O provedor fiscal é acessado somente pelo adaptador `FiscalProvider`.
 - A SEFAZ não é integrada diretamente no MVP.
 - O cliente contrata e configura suas credenciais fiscais no modelo inicial.
-

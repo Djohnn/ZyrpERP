@@ -17,6 +17,7 @@ Todas as mudanças relevantes na base documental são registradas aqui.
 - Estratégia e catálogo de testes, incluindo isolamento, IDOR, offline, fiscal e restauração.
 - Operações, observabilidade, resposta a incidentes e estratégia de releases.
 - Diagramas de contexto, contêineres, dependências, sincronização do PDV e estados fiscais.
+- Marco documental MILESTONE-001, manifesto SHA-256 e pacote distribuível.
 
 ### Decisions
 

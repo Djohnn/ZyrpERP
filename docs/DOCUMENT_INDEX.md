@@ -30,6 +30,8 @@ Registro oficial dos documentos da Enterprise Commerce Platform.
 | OPS-001 | Operations and Observability | 0.1.0 | Draft | `09_Operations/OPS-001_Operations_Observability_v0.1.0.md` |
 | INCIDENT-RESPONSE | Incident Response | 0.1.0 | Draft | `09_Operations/INCIDENT_RESPONSE.md` |
 | REL-001 | Release Strategy | 0.1.0 | Draft | `10_Releases/REL-001_Release_Strategy_v0.1.0.md` |
+| MILESTONE-001 | Documentation Foundation | 0.1.0 | Review | `10_Releases/MILESTONE-001_Documentation_Foundation.md` |
+| MILESTONE-001-MANIFEST | Documentation Foundation Manifest | 0.1.0 | Generated | `10_Releases/MILESTONE-001_MANIFEST.txt` |
 
 ## Material histórico
 

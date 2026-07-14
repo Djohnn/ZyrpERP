@@ -4,7 +4,7 @@ Registro oficial dos documentos do Zyrp.
 
 | Código | Documento | Versão | Status | Caminho |
 |---|---|---:|---|---|
-| DESIGN-FOUNDATION-001 | Foundation Design | 0.1.1 | Review | `superpowers/specs/2026-07-14-enterprise-commerce-platform-foundation-design.md` |
+| DESIGN-FOUNDATION-001 | Zyrp Foundation Design | 0.1.1 | Review | `superpowers/specs/2026-07-14-zyrp-foundation-design.md` |
 | PLAN-DOCBASE-001 | Documentation Baseline Plan | 0.1.0 | Approved | `superpowers/plans/2026-07-14-documentation-baseline-implementation-plan.md` |
 | DOC-STD-001 | Documentation Standard | 0.1.0 | Draft | `00_Governance/DOC-STD-001_Documentation_Standard_v0.1.0.md` |
 | PG-001 | Product Governance | 0.1.0 | Draft | `00_Governance/PG-001_Product_Governance_v0.1.0.md` |

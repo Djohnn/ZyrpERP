@@ -12,13 +12,14 @@ Registro oficial dos documentos da Enterprise Commerce Platform.
 | PV-001 | Product Vision | 0.1.0 | Draft | `01_Product/PV-001_Product_Vision_v0.1.0.md` |
 | PS-001 | Product Strategy | 0.1.0 | Draft | `01_Product/PS-001_Product_Strategy_v0.1.0.md` |
 | PB-001 | Product Bible | 0.1.0 | Draft | `01_Product/PB-001_Product_Bible_v0.1.0.md` |
-| PRD-001 | Master PRD | — | Planned | `01_Product/PRD-001_Master_v0.1.0.md` |
+| PRD-001 | Master PRD | 0.1.0 | Draft | `01_Product/PRD-001_Master_v0.1.0.md` |
 | SAD-001 | Software Architecture Document | 0.1.0 | Draft | `02_Architecture/SAD-001_Software_Architecture_v0.1.0.md` |
 | EH-001 | Engineering Handbook | 0.1.0 | Draft | `02_Architecture/EH-001_Engineering_Handbook_v0.1.0.md` |
 | DDD-001 | Domain Design | 0.1.0 | Draft | `03_Domain/DDD-001_Domain_Design_v0.1.0.md` |
 | ADR-001–006 | Foundational Architecture Decisions | 1.0 | Accepted | `02_Architecture/ADR/` |
 | EVENT-CATALOG | Domain Event Catalog | 0.1.0 | Draft | `03_Domain/DOMAIN_EVENT_CATALOG.md` |
-| SRS-001 | System Requirements Specification | — | Planned | `04_Requirements/SRS-001_System_Requirements_v0.1.0.md` |
+| SRS-001 | System Requirements Specification | 0.1.0 | Draft | `04_Requirements/SRS-001_System_Requirements_v0.1.0.md` |
+| TRACEABILITY | Requirements Traceability Matrix | 0.1.0 | Draft | `04_Requirements/TRACEABILITY_MATRIX.md` |
 | API-001 | API Standards | — | Planned | `05_API/API-001_API_Standards_v0.1.0.md` |
 | TST-001 | Test Strategy | — | Planned | `07_Testing/TST-001_Test_Strategy_v0.1.0.md` |
 | SEC-001 | Security and Multi-Tenancy | — | Planned | `08_Security/SEC-001_Security_Multitenancy_v0.1.0.md` |

@@ -12,6 +12,7 @@ Todas as mudanças relevantes na base documental são registradas aqui.
 - Padrão de documentos, índice e porta de entrada.
 - Primeiros drafts de governança e produto.
 - Seis ADRs fundamentais, SAD, Engineering Handbook e desenho de domínio.
+- PRD Master, SRS e matriz inicial de rastreabilidade.
 
 ### Decisions
 

@@ -17,7 +17,7 @@
 - `Idempotency-Key` é obrigatório em criação de venda, pagamento, sincronização e fiscal.
 - Dinheiro é string decimal acompanhado de moeda; datas seguem ISO 8601.
 - Paginação por cursor para coleções mutáveis; filtros e ordenação são allowlist.
-- Concorrência usa `ETag`/`If-Match` ou campo `version` em recursos editáveis.
+- Concorrência usa optimistic locking com `ETag`/`If-Match` ou campo `version` em recursos editáveis.
 - Erros seguem `application/problem+json` e catálogo estável.
 
 ## Problem Details
@@ -33,4 +33,3 @@ Rate limit por tenant, usuário, dispositivo e operação. Logs registram metada
 | Versão | Data | Alteração |
 |---|---|---|
 | 0.1.0 | 2026-07-14 | Padrões iniciais. |
-

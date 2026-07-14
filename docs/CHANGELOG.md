@@ -18,6 +18,8 @@ Todas as mudanças relevantes na base documental são registradas aqui.
 - Operações, observabilidade, resposta a incidentes e estratégia de releases.
 - Diagramas de contexto, contêineres, dependências, sincronização do PDV e estados fiscais.
 - Marco documental MILESTONE-001, manifesto SHA-256 e pacote distribuível.
+- PRD operacional com roadmap acompanhável e checklist granular do Sprint 0.
+- Prompt universal para execução de uma sprint por qualquer agente de terminal.
 
 ### Decisions
 

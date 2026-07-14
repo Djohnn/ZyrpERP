@@ -6,6 +6,8 @@ Registro oficial dos documentos do Zyrp.
 |---|---|---:|---|---|
 | DESIGN-FOUNDATION-001 | Zyrp Foundation Design | 0.1.1 | Review | `superpowers/specs/2026-07-14-zyrp-foundation-design.md` |
 | PLAN-DOCBASE-001 | Documentation Baseline Plan | 0.1.0 | Approved | `superpowers/plans/2026-07-14-documentation-baseline-implementation-plan.md` |
+| PRD-OPS-001 | Operational Sprint Roadmap | 0.1.0 | Review | `PRD.md` |
+| PROMPT-SPRINT-001 | Universal Sprint Execution Prompt | 0.1.0 | Review | `PROMPT_EXECUCAO_SPRINT.md` |
 | DOC-STD-001 | Documentation Standard | 0.1.0 | Draft | `00_Governance/DOC-STD-001_Documentation_Standard_v0.1.0.md` |
 | PG-001 | Product Governance | 0.1.0 | Draft | `00_Governance/PG-001_Product_Governance_v0.1.0.md` |
 | PC-001 | Project Charter | 0.1.0 | Draft | `00_Governance/PC-001_Project_Charter_v0.1.0.md` |

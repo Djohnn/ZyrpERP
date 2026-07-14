@@ -100,7 +100,9 @@ jobs:
         run: python -m pytest -v
 
       - name: Security check (pip-audit)
-        run: pip-audit --strict --skip-editable
+        run: |
+          python -m pip freeze --exclude-editable > /tmp/requirements-audit.txt
+          pip-audit --strict --requirement /tmp/requirements-audit.txt
 
       - name: Secrets detection
         run: |

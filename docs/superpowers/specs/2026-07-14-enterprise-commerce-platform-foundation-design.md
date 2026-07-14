@@ -5,7 +5,7 @@
 | Campo | Valor |
 |---|---|
 | Código | DESIGN-FOUNDATION-001 |
-| Versão | 0.1.0 |
+| Versão | 0.1.1 |
 | Status | Review |
 | Data | 2026-07-14 |
 | Autor | Arquitetura de Software |
@@ -179,38 +179,33 @@ Serão utilizados logs estruturados com correlation ID, métricas de API, filas,
 
 Os ambientes serão separados em local, testes, homologação, staging e produção. Homologação e produção fiscal terão credenciais e endpoints distintos.
 
-## 12. Estrutura do projeto
+## 12. Estrutura documental inicial
 
 ```text
-Enterprise_Commerce_Platform/
-├── README.md
-├── LICENSE
-├── .gitignore
-├── docs/
-│   ├── README.md
-│   ├── DOCUMENT_INDEX.md
-│   ├── CHANGELOG.md
-│   ├── 00_Governance/
-│   ├── 01_Product/
-│   ├── 02_Architecture/ADR/
-│   ├── 03_Domain/
-│   ├── 04_Requirements/
-│   ├── 05_API/
-│   ├── 06_Diagrams/
-│   ├── 07_Testing/
-│   ├── 08_Security/
-│   ├── 09_Operations/
-│   ├── 10_Releases/
-│   └── 99_Archive/
-├── backend/
-├── frontend/
-├── pdv/
-├── infrastructure/
-├── scripts/
-└── tests/
+C:\ERP\
+└── docs/
+    ├── README.md
+    ├── DOCUMENT_INDEX.md
+    ├── CHANGELOG.md
+    ├── 00_Governance/
+    ├── 01_Product/
+    ├── 02_Architecture/
+    │   └── ADR/
+    ├── 03_Domain/
+    ├── 04_Requirements/
+    ├── 05_API/
+    ├── 06_Diagrams/
+    ├── 07_Testing/
+    ├── 08_Security/
+    ├── 09_Operations/
+    ├── 10_Releases/
+    ├── 99_Archive/
+    └── superpowers/specs/
 ```
 
-Os documentos atuais e o PRD original serão preservados em `99_Archive` como histórico, sem serem tratados como baseline vigente.
+A fase atual utilizará somente `C:\ERP\docs`. Não haverá uma pasta intermediária `Enterprise_Commerce_Platform_Docs`. Os diretórios de código, infraestrutura e testes serão definidos e criados somente quando a fundação documental estiver aprovada e o plano de implementação do software for iniciado.
+
+Os documentos atuais e o PRD original serão preservados em `docs/99_Archive` como histórico, sem serem tratados como baseline vigente.
 
 ## 13. Baseline documental planejada
 
@@ -233,13 +228,14 @@ Todos começarão em `v0.1.0 Draft`, terão histórico, dependências, documento
 
 ## 14. Sequência de execução
 
-1. preservar os rascunhos existentes e o PRD original;
-2. criar estrutura, índice, changelog e governança;
-3. produzir os documentos fundamentais;
-4. revisar consistência cruzada e rastreabilidade;
-5. criar plano técnico por milestones;
-6. iniciar o código Django somente após a fundação documental;
-7. validar cada milestone com testes e artefatos versionados.
+1. preservar os rascunhos existentes e o PRD original em `docs/99_Archive`;
+2. manter toda a fase documental exclusivamente em `C:\ERP\docs`;
+3. criar estrutura, índice, changelog e governança;
+4. produzir os documentos fundamentais;
+5. revisar consistência cruzada e rastreabilidade;
+6. criar plano técnico por milestones;
+7. iniciar o código Django somente após a fundação documental;
+8. validar cada milestone com testes e artefatos versionados.
 
 ## 15. Critérios de aceitação desta especificação
 
@@ -255,3 +251,4 @@ Todos começarão em `v0.1.0 Draft`, terão histórico, dependências, documento
 | Versão | Data | Alteração |
 |---|---|---|
 | 0.1.0 | 2026-07-14 | Consolidação inicial do design aprovado na conversa. |
+| 0.1.1 | 2026-07-14 | Remoção da pasta intermediária e concentração da fase documental em `C:\ERP\docs`. |

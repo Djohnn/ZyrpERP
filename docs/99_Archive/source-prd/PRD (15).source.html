@@ -1,0 +1,204 @@
+<h1><span>PRD — Sistema de Gestão de Estoque e PDV</span></h1><h2><span>1. Visão geral</span></h2><p><span>Sistema para pequenos/médios varejistas (ex: pet shop, mercado) que precisam de:</span></p><ul data-spread="false"><li><p><span>Controle de estoque com suporte a fracionamento de produtos (ex: pacote de 10kg → venda por kg)</span></p></li><li><p><span>PDV completo (venda, desconto, formas de pagamento, parcelamento)</span></p></li><li><p><span>Controle de caixa (abertura/fechamento) com rastreabilidade por funcionário</span></p></li><li><p><span>Devolução de produtos com reflexo automático no estoque e no caixa</span></p></li><li><p><span>Relatórios de estoque e vendas</span></p></li><li><p><span>Cadastro de pessoas físicas e jurídicas (clientes e fornecedores)</span></p></li><li><p><span>Administração de funcionários com permissões</span></p></li></ul><p><strong><span>Stack sugerida</span></strong><span>: Python 3.12, Django 5.x, PostgreSQL (aproveitando a experiência já consolidada no projeto financeiro).</span></p><div contenteditable="false"><hr></div><h2><span>2. Apps do projeto</span></h2><ul data-spread="false"><li><p><code dir="ltr"><span>estoque</span></code><span> — produtos, movimentações, fracionamento, relatórios</span></p></li><li><p><code dir="ltr"><span>pdv</span></code><span> — vendas, itens de venda, pagamentos, devoluções</span></p></li><li><p><code dir="ltr"><span>caixa</span></code><span> — sessões de caixa, movimentações de caixa, fechamento</span></p></li><li><p><code dir="ltr"><span>pessoas</span></code><span> — clientes e fornecedores (PF/PJ)</span></p></li><li><p><code dir="ltr"><span>usuarios</span></code><span> — funcionários, permissões, autenticação</span></p></li><li><p><code dir="ltr"><span>fiscal</span></code><span> — dados da empresa emitente, certificado digital, emissão de NF-e/NFC-e/NFS-e</span></p></li></ul><div contenteditable="false"><hr></div><h2><span>3. Modelagem de dados</span></h2><h3><span>3.1 Produto e estoque</span></h3><pre dir="ltr"><code dir="ltr"><span>class Produto(models.Model):
+    UNIDADE_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[("UN", "Unidade"), ("KG", "Quilograma"), ("PCT", "Pacote")]</span>
+
+    nome = models.CharField(max_length=200)
+    categoria = models.ForeignKey("Categoria", on_delete=models.PROTECT)
+    unidade_venda = models.CharField(max_length=3, choices=UNIDADE_CHOICES)
+    preco_venda = models.DecimalField(max_digits=10, decimal_places=2)
+    preco_custo = models.DecimalField(max_digits=10, decimal_places=2)
+    estoque_atual = models.DecimalField(max_digits=10, decimal_places=3)  # suporta kg fracionado
+    produto_pai = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT,
+                                     related_name="produtos_filhos")
+    fator_conversao = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    ativo = models.BooleanField(default=True)
+
+    # --- Dados fiscais (para emissão de NF-e / NFC-e) ---
+    ncm = models.CharField(max_length=8)  # Nomenclatura Comum do Mercosul
+    cest = models.CharField(max_length=7, blank=True)  # só se sujeito a substituição tributária
+    ean_gtin = models.CharField(max_length=14, blank=True)  # código de barras, "SEM GTIN" se não houver
+    origem_mercadoria = models.CharField(max_length=1, choices=<span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[
+        ("0", "Nacional"), ("1", "Estrangeira - importação direta"),
+        ("2", "Estrangeira - mercado interno"),
+        # 3-8: demais casos de nacional/estrangeira com conteúdo de importação
+    ]</span>, default="0")
+    unidade_tributavel = models.CharField(max_length=6, blank=True)  # se diferente da unidade_venda
+    csosn = models.CharField(max_length=3, choices=<span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[
+        ("102", "Tributada pelo Simples, sem crédito"),
+        ("103", "Isenção do ICMS para faixa de receita bruta"),
+        ("300", "Imune"),
+        ("400", "Não tributada pelo Simples Nacional"),
+        ("500", "ICMS cobrado por substituição tributária"),
+    ]</span>, default="102")  # MEI/Simples usa CSOSN; regime normal usaria CST — ver seção 3.7
+    aliquota_icms = models.DecimalField(max_digits=5, decimal_places=2, default=0)</span></code></pre><blockquote><p><span>Exemplo: "Ração 10kg (pacote)" é o </span><code dir="ltr"><span>produto_pai</span></code><span> de "Ração fracionada (kg)", com </span><code dir="ltr"><span>fator_conversao = 10</span></code><span>.</span><br><span>Fracionar 1 pacote gera, em uma única transação atômica:</span></p><ul data-spread="false"><li><p><code dir="ltr"><span>MovimentoEstoque</span></code><span> tipo </span><code dir="ltr"><span>FRACIONAMENTO_BAIXA</span></code><span> no produto pai (-1 pacote)</span></p></li><li><p><code dir="ltr"><span>MovimentoEstoque</span></code><span> tipo </span><code dir="ltr"><span>FRACIONAMENTO_ENTRADA</span></code><span> no produto filho (+10 kg)</span></p></li></ul></blockquote><pre dir="ltr"><code dir="ltr"><span>class MovimentoEstoque(models.Model):
+    TIPO_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[
+        ("ENTRADA", "Entrada"),
+        ("SAIDA", "Saída"),
+        ("FRACIONAMENTO_BAIXA", "Fracionamento - baixa"),
+        ("FRACIONAMENTO_ENTRADA", "Fracionamento - entrada"),
+        ("DEVOLUCAO", "Devolução"),
+        ("AJUSTE", "Ajuste manual"),
+    ]</span>
+
+    produto = models.ForeignKey(Produto, on_delete=models.PROTECT)
+    tipo = models.CharField(max_length=25, choices=TIPO_CHOICES)
+    quantidade = models.DecimalField(max_digits=10, decimal_places=3)
+    venda = models.ForeignKey("pdv.Venda", null=True, blank=True, on_delete=models.SET_NULL)
+    devolucao = models.ForeignKey("pdv.Devolucao", null=True, blank=True, on_delete=models.SET_NULL)
+    usuario = models.ForeignKey("usuarios.Funcionario", on_delete=models.PROTECT)
+    data_hora = models.DateTimeField(auto_now_add=True)
+    observacao = models.CharField(max_length=255, blank=True)</span></code></pre><h3><span>3.2 Venda, item de venda e pagamento</span></h3><pre dir="ltr"><code dir="ltr"><span>class Venda(models.Model):
+    STATUS_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[("FINALIZADA", "Finalizada"), ("CANCELADA", "Cancelada")]</span>
+
+    numero = models.CharField(max_length=20, unique=True)
+    vendedor = models.ForeignKey("usuarios.Funcionario", on_delete=models.PROTECT)
+    cliente = models.ForeignKey("pessoas.Pessoa", null=True, blank=True, on_delete=models.SET_NULL)
+    caixa_sessao = models.ForeignKey("caixa.CaixaSessao", on_delete=models.PROTECT)
+    desconto_valor = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    desconto_percentual = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default="FINALIZADA")
+    data_hora = models.DateTimeField(auto_now_add=True)
+
+
+class ItemVenda(models.Model):
+    venda = models.ForeignKey(Venda, on_delete=models.CASCADE, related_name="itens")
+    produto = models.ForeignKey("estoque.Produto", on_delete=models.PROTECT)
+    quantidade = models.DecimalField(max_digits=10, decimal_places=3)
+    preco_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    devolvido = models.BooleanField(default=False)
+
+
+class Pagamento(models.Model):
+    FORMA_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[
+        ("DINHEIRO", "Dinheiro"),
+        ("CREDITO", "Cartão de crédito"),
+        ("DEBITO", "Cartão de débito"),
+        ("PIX", "Pix"),
+    ]</span>
+
+    venda = models.ForeignKey(Venda, on_delete=models.CASCADE, related_name="pagamentos")
+    forma = models.CharField(max_length=10, choices=FORMA_CHOICES)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    parcelas = models.PositiveSmallIntegerField(default=1)  # só relevante se CREDITO</span></code></pre><blockquote><p><span>Uma venda pode ter mais de um </span><code dir="ltr"><span>Pagamento</span></code><span> (ex: parte em dinheiro, parte no cartão).</span></p></blockquote><h3><span>3.3 Devolução</span></h3><pre dir="ltr"><code dir="ltr"><span>class Devolucao(models.Model):
+    FORMA_REEMBOLSO_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[
+        ("DINHEIRO", "Dinheiro"),
+        ("ESTORNO_CARTAO", "Estorno no cartão"),
+        ("ESTORNO_PIX", "Estorno via Pix"),
+    ]</span>
+
+    item_venda = models.ForeignKey(ItemVenda, on_delete=models.PROTECT, related_name="devolucoes")
+    quantidade = models.DecimalField(max_digits=10, decimal_places=3)
+    motivo = models.CharField(max_length=255)
+    forma_reembolso = models.CharField(max_length=15, choices=FORMA_REEMBOLSO_CHOICES)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    usuario = models.ForeignKey("usuarios.Funcionario", on_delete=models.PROTECT)
+    data_hora = models.DateTimeField(auto_now_add=True)</span></code></pre><p><strong><span>Regra de negócio ao salvar uma </span></strong><code dir="ltr"><strong><span>Devolucao</span></strong></code><span> (dentro de uma transação):</span></p><ol data-spread="false" start="1"><li><p><span>Cria </span><code dir="ltr"><span>MovimentoEstoque</span></code><span> tipo </span><code dir="ltr"><span>DEVOLUCAO</span></code><span> (reentrada do produto no estoque)</span></p></li><li><p><span>Marca </span><code dir="ltr"><span>ItemVenda.devolvido = True</span></code><span> (ou cria controle de devolução parcial se quantidade &lt; total do item)</span></p></li><li><p><span>Se </span><code dir="ltr"><span>forma_reembolso == DINHEIRO</span></code><span>: cria </span><code dir="ltr"><span>MovimentoCaixa</span></code><span> tipo </span><code dir="ltr"><span>SANGRIA</span></code><span>, com motivo </span><code dir="ltr"><span>"Devolução: {produto} - {motivo}"</span></code><span>, vinculado à sessão de caixa aberta no momento</span></p></li><li><p><span>Se </span><code dir="ltr"><span>forma_reembolso</span></code><span> for cartão ou Pix: </span><strong><span>não</span></strong><span> gera movimento de caixa físico — gera um registro de "estorno pendente" para conferência (não impacta o saldo em dinheiro do fechamento)</span></p></li></ol><h3><span>3.4 Caixa</span></h3><pre dir="ltr"><code dir="ltr"><span>class CaixaSessao(models.Model):
+    STATUS_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[("ABERTO", "Aberto"), ("FECHADO", "Fechado")]</span>
+
+    funcionario_abertura = models.ForeignKey("usuarios.Funcionario", on_delete=models.PROTECT,
+                                              related_name="caixas_abertos")
+    funcionario_fechamento = models.ForeignKey("usuarios.Funcionario", null=True, blank=True,
+                                                on_delete=models.SET_NULL, related_name="caixas_fechados")
+    valor_abertura = models.DecimalField(max_digits=10, decimal_places=2)
+    valor_fechamento_informado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="ABERTO")
+    data_abertura = models.DateTimeField(auto_now_add=True)
+    data_fechamento = models.DateTimeField(null=True, blank=True)
+
+
+class MovimentoCaixa(models.Model):
+    TIPO_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[("VENDA", "Venda"), ("SANGRIA", "Sangria"), ("SUPRIMENTO", "Suprimento")]</span>
+
+    caixa_sessao = models.ForeignKey(CaixaSessao, on_delete=models.CASCADE, related_name="movimentos")
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
+    forma_pagamento = models.CharField(max_length=10, choices=Pagamento.FORMA_CHOICES, null=True, blank=True)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    motivo = models.CharField(max_length=255, blank=True)
+    venda = models.ForeignKey(Venda, null=True, blank=True, on_delete=models.SET_NULL)
+    devolucao = models.ForeignKey(Devolucao, null=True, blank=True, on_delete=models.SET_NULL)
+    data_hora = models.DateTimeField(auto_now_add=True)</span></code></pre><p><strong><span>Fechamento de caixa (agregação de </span></strong><code dir="ltr"><strong><span>MovimentoCaixa</span></strong></code><strong><span>)</span></strong><span>:</span></p><pre dir="ltr"><code dir="ltr"><span>Vendas do dia:
+  Cartão crédito  = soma(tipo=VENDA, forma=CREDITO)
+  Cartão débito   = soma(tipo=VENDA, forma=DEBITO)
+  Dinheiro        = soma(tipo=VENDA, forma=DINHEIRO)
+  Pix             = soma(tipo=VENDA, forma=PIX)
+  Total bruto     = soma de todas as formas
+
+Saídas do caixa:
+  Sangrias (motivo)  = lista de MovimentoCaixa tipo=SANGRIA
+  Suprimentos        = lista de MovimentoCaixa tipo=SUPRIMENTO
+
+Saldo esperado em dinheiro = vendas em dinheiro - sangrias em dinheiro + suprimentos em dinheiro
+Diferença de caixa = valor_fechamento_informado - saldo esperado
+
+Estornos pendentes (cartão/Pix) = lista à parte, não entra no saldo físico</span></code></pre><h3><span>3.5 Pessoas</span></h3><pre dir="ltr"><code dir="ltr"><span>class Pessoa(models.Model):
+    TIPO_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[("FISICA", "Pessoa física"), ("JURIDICA", "Pessoa jurídica")]</span>
+    PAPEL_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[("CLIENTE", "Cliente"), ("FORNECEDOR", "Fornecedor"), ("AMBOS", "Cliente e fornecedor")]</span>
+
+    tipo = models.CharField(max_length=8, choices=TIPO_CHOICES)
+    papel = models.CharField(max_length=10, choices=PAPEL_CHOICES)
+    nome_razao_social = models.CharField(max_length=200)
+    cpf_cnpj = models.CharField(max_length=18, unique=True)
+    telefone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    endereco = models.CharField(max_length=255, blank=True)
+    ativo = models.BooleanField(default=True)</span></code></pre><h3><span>3.6 Funcionários e permissões</span></h3><pre dir="ltr"><code dir="ltr"><span>class Funcionario(models.Model):
+    CARGO_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[("ADMIN", "Administrador"), ("VENDEDOR", "Vendedor")]</span>
+
+    usuario = models.OneToOneField("auth.User", on_delete=models.CASCADE)
+    cargo = models.CharField(max_length=10, choices=CARGO_CHOICES)
+    ativo = models.BooleanField(default=True)</span></code></pre><blockquote><p><span>Recomendação: usar </span><code dir="ltr"><span>Groups</span></code><span>/</span><code dir="ltr"><span>Permissions</span></code><span> nativos do Django em vez de reinventar um sistema de permissões — cobre "pode abrir caixa", "pode dar desconto", "pode cancelar venda", "pode gerenciar estoque" via permissões customizadas por model/ação.</span></p></blockquote><h3><span>3.7 Dados fiscais (empresa emitente, certificado, notas)</span></h3><blockquote><p><span>Você definiu: empresa MEI e emissão de </span><strong><span>NF-e</span></strong><span> (produtos), </span><strong><span>NFC-e</span></strong><span> (consumidor final) e </span><strong><span>NFS-e</span></strong><span> (serviços). SAT foi removido do escopo — é um sistema específico de São Paulo, e como a operação é em Goiás não se aplica. Dois pontos importantes antes do modelo:</span></p><ol data-spread="false" start="1"><li><p><strong><span>CRT do MEI</span></strong><span>: desde 01/04/2025, toda NF-e/NFC-e de MEI é obrigada a informar o Código de Regime Tributário </span><strong><span>4 (MEI)</span></strong><span>. É diferente do CRT 1 (Simples Nacional comum) — se o campo vier errado, a SEFAZ rejeita a nota.</span></p></li><li><p><strong><span>NFC-e não pode mais ir para CNPJ</span></strong><span>: pelo Ajuste SINIEF nº 11/2025, a partir de </span><strong><span>05/01/2026</span></strong><span> a NFC-e passou a ser exclusiva para consumidor final pessoa física (CPF). Se o sistema vender para uma pessoa jurídica no PDV, a nota tem que ser NF-e (modelo 55), não NFC-e. Isso significa que o </span><strong><span>tipo de documento fiscal deve ser decidido pelo tipo de pessoa do cliente na venda</span></strong><span>, não fixo por produto.</span></p></li></ol></blockquote><pre dir="ltr"><code dir="ltr"><span>class Empresa(models.Model):
+    CRT_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[
+        ("1", "Simples Nacional"),
+        ("2", "Simples Nacional - excesso de sublimite"),
+        ("3", "Regime Normal"),
+        ("4", "MEI"),
+    ]</span>
+
+    razao_social = models.CharField(max_length=200)
+    nome_fantasia = models.CharField(max_length=200, blank=True)
+    cnpj = models.CharField(max_length=18, unique=True)
+    inscricao_estadual = models.CharField(max_length=20, blank=True)  # obrigatória p/ NF-e/NFC-e
+    inscricao_municipal = models.CharField(max_length=20, blank=True)  # obrigatória p/ NFS-e
+    crt = models.CharField(max_length=1, choices=CRT_CHOICES, default="4")
+    codigo_municipio_ibge = models.CharField(max_length=7)
+    uf = models.CharField(max_length=2)
+    logradouro = models.CharField(max_length=200)
+    numero = models.CharField(max_length=10)
+    bairro = models.CharField(max_length=100)
+    cep = models.CharField(max_length=9)
+    ambiente_nfe = models.CharField(max_length=10, choices=<span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[
+        ("HOMOLOGACAO", "Homologação"), ("PRODUCAO", "Produção")
+    ]</span>, default="HOMOLOGACAO")
+
+
+class CertificadoDigital(models.Model):
+    TIPO_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[("A1", "A1 - arquivo"), ("A3", "A3 - token/cartão")]</span>
+
+    empresa = models.OneToOneField(Empresa, on_delete=models.CASCADE, related_name="certificado")
+    tipo = models.CharField(max_length=2, choices=TIPO_CHOICES, default="A1")
+    arquivo_criptografado = models.BinaryField()  # .pfx/.p12, nunca em texto puro
+    senha_criptografada = models.BinaryField()    # nunca a senha em texto puro no banco
+    validade_inicio = models.DateField()
+    validade_fim = models.DateField()
+    ativo = models.BooleanField(default=True)</span></code></pre><blockquote><p><strong><span>Segurança do certificado — não é opcional</span></strong><span>: o certificado + senha permitem emitir notas fiscais válidas em nome da empresa. Nunca salvar </span><code dir="ltr"><span>arquivo</span></code><span> ou </span><code dir="ltr"><span>senha</span></code><span> em texto puro no banco. Usar criptografia simétrica (ex: </span><code dir="ltr"><span>django-cryptography</span></code><span> ou </span><code dir="ltr"><span>Fernet</span></code><span> do pacote </span><code dir="ltr"><span>cryptography</span></code><span>) com a chave de criptografia guardada fora do banco (variável de ambiente / secrets manager), nunca versionada no repositório. Prever alerta automático (ex: e-mail) quando faltarem 30/15/7 dias para o vencimento do certificado — nota fiscal não emite com certificado vencido.</span></p></blockquote><pre dir="ltr"><code dir="ltr"><span>class NotaFiscal(models.Model):
+    TIPO_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[
+        ("NFE", "NF-e (produto)"),
+        ("NFCE", "NFC-e (consumidor final)"),
+        ("NFSE", "NFS-e (serviço)"),
+    ]</span>
+    STATUS_CHOICES = <span data-placeholder-token="true" class="text-token-text-primary cursor-text rounded-sm" style="background-color: color-mix(in srgb, var(--theme-user-selection-bg, var(--selection)) 30%, transparent); padding-top: 4px; padding-bottom: 4px;">[
+        ("PENDENTE", "Pendente"), ("AUTORIZADA", "Autorizada"),
+        ("REJEITADA", "Rejeitada"), ("CANCELADA", "Cancelada"),
+    ]</span>
+
+    tipo = models.CharField(max_length=5, choices=TIPO_CHOICES)
+    venda = models.ForeignKey("pdv.Venda", null=True, blank=True, on_delete=models.PROTECT)
+    numero = models.PositiveIntegerField()
+    serie = models.CharField(max_length=3, default="1")
+    chave_acesso = models.CharField(max_length=44, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="PENDENTE")
+    protocolo_autorizacao = models.CharField(max_length=50, blank=True)
+    xml_retorno = models.TextField(blank=True)
+    motivo_rejeicao = models.CharField(max_length=255, blank=True)
+    data_emissao = models.DateTimeField(auto_now_add=True)</span></code></pre><p><strong><span>Regra de decisão do tipo de documento na venda</span></strong><span>: ao finalizar a venda, o sistema escolhe automaticamente entre NF-e e NFC-e com base no </span><code dir="ltr"><span>cliente.tipo</span></code><span>:</span></p><ul data-spread="false"><li><p><code dir="ltr"><span>cliente</span></code><span> é pessoa física (ou venda sem cliente identificado) → </span><strong><span>NFC-e</span></strong></p></li><li><p><code dir="ltr"><span>cliente</span></code><span> é pessoa jurídica → </span><strong><span>NF-e</span></strong><span> (a NFC-e não pode mais ser emitida pra CNPJ desde 05/01/2026)</span></p></li></ul><p><strong><span>Sobre o provedor de emissão</span></strong><span>: dá pra emitir direto pela SEFAZ (mais barato, mais complexo — exige webservices SOAP/assinatura XML própria) ou por um provedor homologado (Focus NFe, por exemplo — você já tem familiaridade disso do GestUP). Um provedor cobre NF-e/NFC-e/NFS-e numa API só, o que simplifica bastante a integração.</span></p><h3><span>3.8 Fluxo detalhado de emissão da nota fiscal</span></h3><ol data-spread="false" start="1"><li><p><strong><span>Venda finalizada no PDV</span></strong><span> — o </span><code dir="ltr"><span>MovimentoCaixa</span></code><span> de venda já foi registrado; a nota fiscal é um passo seguinte e não deve travar o fechamento da venda em si (ver ponto sobre contingência abaixo).</span></p></li><li><p><strong><span>Monta o XML fiscal</span></strong><span>: para cada </span><code dir="ltr"><span>ItemVenda</span></code><span>, busca os dados fiscais do </span><code dir="ltr"><span>Produto</span></code><span> (NCM, CSOSN, alíquotas etc.) e os dados da </span><code dir="ltr"><span>Empresa</span></code><span> (CNPJ, IE, CRT). Decide o tipo de documento: </span><code dir="ltr"><span>cliente.tipo == JURIDICA</span></code><span> → NF-e; caso contrário → NFC-e.</span></p></li><li><p><strong><span>Verifica o certificado</span></strong><span>: antes de assinar, checa se </span><code dir="ltr"><span>CertificadoDigital.ativo</span></code><span> e se </span><code dir="ltr"><span>validade_fim</span></code><span> ainda não passou. Certificado vencido bloqueia a emissão — o sistema deve avisar isso de forma clara pro operador, não só falhar silenciosamente.</span></p></li><li><p><strong><span>Assina o XML</span></strong><span> com o certificado descriptografado em memória (nunca gravar o arquivo decifrado em disco).</span></p></li><li><p><strong><span>Envia para emissão</span></strong><span> — via provedor homologado (ex: Focus NFe) ou direto pelos webservices da SEFAZ.</span></p></li><li><p><strong><span>Resposta da SEFAZ</span></strong><span>:</span></p><ul data-spread="false"><li><p><strong><span>Autorizada</span></strong><span>: grava </span><code dir="ltr"><span>chave_acesso</span></code><span>, </span><code dir="ltr"><span>protocolo_autorizacao</span></code><span>, status </span><code dir="ltr"><span>AUTORIZADA</span></code><span>; gera o PDF do DANFE (NF-e) ou DANFCE (NFC-e) e vincula à </span><code dir="ltr"><span>Venda</span></code><span>.</span></p></li><li><p><strong><span>Rejeitada</span></strong><span>: grava </span><code dir="ltr"><span>motivo_rejeicao</span></code><span>, status </span><code dir="ltr"><span>REJEITADA</span></code><span>; a venda continua valenda no caixa, mas fica sinalizada como "nota pendente de correção" até reenviar.</span></p></li></ul></li><li><p><strong><span>Contingência (SEFAZ fora do ar)</span></strong><span>: o PDV não pode parar de vender porque a SEFAZ caiu. Prever um modo de contingência (nota fica com status </span><code dir="ltr"><span>PENDENTE</span></code><span> e é reenviada automaticamente depois, dentro do prazo legal) — isso é padrão em qualquer PDV de varejo real.</span></p></li><li><p><strong><span>Cancelamento</span></strong><span>: se a venda inteira for cancelada dentro do prazo legal (geralmente até 24h para NFC-e, regras variam por estado), dispara evento de cancelamento na SEFAZ. </span><strong><span>Devolução parcial de um item não cancela a nota inteira</span></strong><span> — normalmente exige emissão de uma nota de entrada de devolução separada, então isso precisa ser tratado à parte do fluxo de </span><code dir="ltr"><span>Devolucao</span></code><span> já modelado (ver ponto em aberto).</span></p></li></ol><div contenteditable="false"><hr></div><h2><span>4. Fluxo de venda com devolução (referência)</span></h2><ol data-spread="false" start="1"><li><p><span>Abertura de caixa (funcionário + valor inicial)</span></p></li><li><p><span>Venda no PDV: itens (com fracionamento se aplicável), desconto, forma(s) de pagamento</span></p></li><li><p><span>Cliente solicita devolução de um item específico</span></p></li><li><p><span>Reembolso conforme forma de pagamento original:</span></p><ul data-spread="false"><li><p><span>Dinheiro → sangria imediata no caixa</span></p></li><li><p><span>Cartão → estorno na operadora (não afeta caixa físico no dia)</span></p></li><li><p><span>Pix → devolução via Pix (não afeta caixa físico)</span></p></li></ul></li><li><p><span>Reentrada do produto no estoque (</span><code dir="ltr"><span>MovimentoEstoque</span></code><span> tipo DEVOLUCAO)</span></p></li><li><p><span>Registro no caixa com motivo detalhado</span></p></li><li><p><span>Fechamento de caixa consolidado por forma de pagamento, com sangrias e estornos pendentes destacados</span></p></li></ol><div contenteditable="false"><hr></div><h2><span>5. Relatórios</span></h2><ul data-spread="false"><li><p><strong><span>Estoque completo</span></strong><span>: todos os produtos e quantidades atuais</span></p></li><li><p><strong><span>Produtos zerados</span></strong><span>: produtos com </span><code dir="ltr"><span>estoque_atual &lt;= 0</span></code></p></li><li><p><strong><span>Vendas por produto</span></strong><span>: histórico e quantidade vendida de um produto específico</span></p></li><li><p><strong><span>Fechamento de caixa</span></strong><span>: detalhado por forma de pagamento, sangrias e estornos pendentes</span></p></li></ul><div contenteditable="false"><hr></div><h2><span>6. Sprints</span></h2><table><tbody><tr><th><span>Sprint</span></th><th><span>Escopo</span></th></tr><tr><td><span>0</span></td><td><span>Setup do projeto, apps (</span><code dir="ltr"><span>estoque</span></code><span>, </span><code dir="ltr"><span>pdv</span></code><span>, </span><code dir="ltr"><span>caixa</span></code><span>, </span><code dir="ltr"><span>pessoas</span></code><span>, </span><code dir="ltr"><span>usuarios</span></code><span>)</span></td></tr><tr><td><span>1</span></td><td><span>Modelo </span><code dir="ltr"><span>Produto</span></code><span> + </span><code dir="ltr"><span>Categoria</span></code><span> + CRUD básico</span></td></tr><tr><td><span>2</span></td><td><code dir="ltr"><span>MovimentoEstoque</span></code><span> + lógica de fracionamento (produto_pai/fator_conversao)</span></td></tr><tr><td><span>3</span></td><td><span>Relatórios de estoque (geral, zerados, vendas por produto)</span></td></tr><tr><td><span>4</span></td><td><code dir="ltr"><span>Pessoa</span></code><span> (PF/PJ) + fornecedores/clientes</span></td></tr><tr><td><span>5</span></td><td><code dir="ltr"><span>Funcionario</span></code><span> + grupos/permissões + admin</span></td></tr><tr><td><span>6</span></td><td><code dir="ltr"><span>CaixaSessao</span></code><span> — abertura/fechamento básico (sem venda ainda)</span></td></tr><tr><td><span>7</span></td><td><span>PDV — </span><code dir="ltr"><span>Venda</span></code><span>/</span><code dir="ltr"><span>ItemVenda</span></code><span>/</span><code dir="ltr"><span>Pagamento</span></code><span>, desconto, parcelamento</span></td></tr><tr><td><span>8</span></td><td><code dir="ltr"><span>Devolucao</span></code><span> + reentrada no estoque + reflexo no caixa</span></td></tr><tr><td><span>9</span></td><td><span>Relatório de fechamento de caixa completo</span></td></tr><tr><td><span>10</span></td><td><code dir="ltr"><span>Empresa</span></code><span> (dados do emitente) + </span><code dir="ltr"><span>CertificadoDigital</span></code><span> (upload/criptografia + alerta de vencimento)</span></td></tr><tr><td><span>11</span></td><td><span>Campos fiscais no </span><code dir="ltr"><span>Produto</span></code><span> (NCM, CEST, CSOSN, origem, etc.)</span></td></tr><tr><td><span>12</span></td><td><span>Integração de emissão (NF-e/NFC-e, decisão automática por tipo de cliente) via provedor homologado</span></td></tr><tr><td><span>13</span></td><td><span>NFS-e (se aplicável a serviços)</span></td></tr><tr><td><span>14</span></td><td><span>Ajustes finos, permissões refinadas, testes</span></td></tr></tbody></table><div contenteditable="false"><hr></div><h2><span>7. Pontos em aberto para próximas sessões</span></h2><ul data-spread="false"><li><p><span>Definir se devolução parcial de quantidade (ex: devolver 1kg de 2kg fracionados) precisa de controle mais granular no </span><code dir="ltr"><span>ItemVenda</span></code></p></li><li><p><span>Definir regra de cancelamento de venda completa (diferente de devolução de item)</span></p></li><li><p><span>Definir se have integração real com maquineta de cartão/Pix ou se o registro de estorno é apenas manual/informativo</span></p></li><li><p><span>Definir formato de emissão de cupom/nota (se necessário nesta fase)</span></p></li><li><p><span>Confirmar se o negócio presta serviços (justifica NFS-e) ou é só venda de produto</span></p></li><li><p><span>Escolher provedor de emissão (ex: Focus NFe) e mapear diferenças de contrato entre NF-e/NFC-e/NFS-e</span></p></li><li><p><span>Definir estratégia de guarda da chave de criptografia do certificado (variável de ambiente vs. secrets manager)</span></p></li><li><p><span>Definir como tratar o lado fiscal da devolução parcial (nota de entrada de devolução separada da nota original)</span></p></li></ul>

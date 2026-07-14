@@ -1,0 +1,121 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.*.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+credentials/
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+*.egg-info/
+.eggs/
+build/
+dist/
+pip-wheel-metadata/
+staticfiles/
+media/
+uploads/
+
+# Django local state
+local_settings.py
+*.log
+logs/
+
+# Node.js / React / Electron
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.parcel-cache/
+.vite/
+.turbo/
+.next/
+out/
+release/
+electron-dist/
+*.map
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Keep dependency lockfiles tracked
+!package-lock.json
+!pnpm-lock.yaml
+!yarn.lock
+!poetry.lock
+!Pipfile.lock
+
+# PDV local databases and runtime data
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+pdv-data/
+offline-data/
+
+# Containers and local infrastructure
+docker-compose.override.yml
+docker-compose.override.yaml
+.docker/
+volumes/
+
+# Backups, dumps and generated packages
+*.bak
+*.backup
+*.dump
+*.sql.gz
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+*~
+
+# IDEs and operating systems
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local agent state
+.agents/
+.codex/
+.worktrees/
+worktrees/

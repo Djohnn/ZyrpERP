@@ -1,0 +1,89 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zyrp-backend"
+version = "0.1.0"
+description = "Zyrp ERP backend - modular Django/DRF monolith."
+requires-python = ">=3.12"
+readme = "README.md"
+dependencies = [
+    "Django>=5.0,<5.2",
+    "djangorestframework>=3.15",
+    "psycopg[binary]>=3.2",
+    "redis>=5.0",
+    "celery>=5.4",
+    "django-redis>=5.4",
+    "python-decouple>=3.8",
+    "gunicorn>=23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "django-stubs[compatible-mypy]>=5.0",
+    "djangorestframework-stubs>=3.15",
+    "pip-audit>=2.7",
+    "detect-secrets>=1.5",
+]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+addopts = "-ra --strict-markers --tb=short --cov=accounts --cov=tenancy --cov=audit --cov=outbox --cov=config --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
+testpaths = ["tests"]
+cache_dir = ".test-cache"
+
+[tool.coverage.run]
+branch = true
+omit = [
+    "*/migrations/*",
+    "config/asgi.py",
+    "config/wsgi.py",
+]
+
+[tool.coverage.report]
+precision = 1
+skip_empty = true
+show_missing = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ", "S", "RET"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "B"]
+"config/settings/**" = ["F403"]
+"config/urls.py" = ["F401"]
+"config/settings/migration.py" = ["F403", "F405"]
+"tenancy/models.py" = ["DJ012"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+exclude = ["migrations", "\\.venv"]
+
+[[tool.mypy.overrides]]
+module = ["outbox.models", "tenancy.models", "audit.models"]
+disable_error_code = ["var-annotated"]
+
+[[tool.mypy.overrides]]
+module = ["celery.*", "redis.*", "decouple.*", "django.*", "django-stubs.*", "rest_framework.*"]
+ignore_missing_imports = true

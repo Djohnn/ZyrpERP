@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master]
+
+env:
+  PYTHON_VERSION: '3.13'
+  DJANGO_SETTINGS_MODULE: config.settings.test
+  DB_NAME: zyrp_test
+  DB_USER: zyrp
+  DB_PASSWORD: zyrp
+  DB_HOST: localhost
+  DB_PORT: 5432
+  REDIS_URL: redis://localhost:6379/0
+  SECRET_KEY: ci-only-not-a-secret-0123456789abcdefghijklmnopqrstuvwxyz-ABCDE
+  DEBUG: 'False'
+  ALLOWED_HOSTS: localhost
+  POSTGRES_DB: zyrp_test
+  POSTGRES_USER: zyrp
+  POSTGRES_PASSWORD: zyrp
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_APP_USER: zyrp_app
+  POSTGRES_APP_PASSWORD: zyrp_app_ci
+  POSTGRES_TEST_USER: zyrp_test
+  POSTGRES_TEST_PASSWORD: zyrp_test_ci
+  POSTGRES_TEST_DB: test_zyrp
+  CELERY_BROKER_URL: redis://localhost:6379/1
+  CELERY_RESULT_BACKEND: redis://localhost:6379/1
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: zyrp_test
+          POSTGRES_USER: zyrp
+          POSTGRES_PASSWORD: zyrp
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Bootstrap unprivileged database roles
+        run: bash ../infra/postgres/init/001_roles.sh
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Type check (mypy)
+        run: mypy .
+
+      - name: Check pending migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run migrations
+        run: python manage.py migrate --settings=config.settings.migration
+
+      - name: Verify migrations applied
+        run: python manage.py migrate --check --settings=config.settings.migration
+
+      - name: Run tests
+        run: python -m pytest -v
+
+      - name: Security check (pip-audit)
+        run: pip-audit --strict
+
+      - name: Secrets detection
+        run: |
+          cd ..
+          detect-secrets scan --baseline .secrets.baseline
+          git diff --exit-code -- .secrets.baseline
+
+      - name: Deploy check
+        run: python manage.py check --deploy --settings=config.settings.production

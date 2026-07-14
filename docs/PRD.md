@@ -29,7 +29,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 ## Como acompanhar
 
 - `- [ ]`: tarefa pendente ou ainda não validada.
-- `- [ ]`: tarefa implementada e comprovada pela validação indicada.
+- `- [x]`: tarefa implementada e comprovada pela validação indicada.
 - `BLOQUEADO:`: impedimento registrado abaixo da tarefa; a caixa permanece aberta.
 - Uma tarefa parcialmente concluída continua aberta.
 - O agente atualiza a caixa somente depois de executar a validação correspondente.
@@ -39,7 +39,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 | Sprint | Estado | Objetivo resumido |
 |---:|---|---|
-| 0 | Em correção | Fundação técnica e isolamento multi-tenant |
+| 0 | Concluída | Fundação técnica e isolamento multi-tenant |
 | 1 | A detalhar | Autenticação, onboarding e autorização |
 | 2 | A detalhar | Catálogo e cadastros-base |
 | 3 | A detalhar | Estoque e movimentações |
@@ -54,9 +54,9 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 ### Sprint 0 — Fundação Técnica do Zyrp
 
 **Duração de referência:** 1 a 2 semanas  
-**Estado:** Em correção
+**Estado:** Concluída
 
-**Correção de aceite:** auditoria independente identificou bypass de RLS, ausência de IDOR real, migrations pendentes e checkboxes sem evidência. Os itens afetados permanecerão abertos até nova validação.
+**Correção de aceite:** os problemas de bypass de RLS, ausência de IDOR real, migrations pendentes e checkboxes sem evidência foram corrigidos e revalidados em 2026-07-14. As evidências estão no relatório final da sprint e no histórico Git.
 
 **Objetivo:** disponibilizar uma base Django reproduzível, observável e testada, com autenticação preparada, hierarquia organizacional e isolamento multi-tenant comprovado antes da implementação dos módulos comerciais.
 
@@ -66,133 +66,134 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 0.1 Repositório e ambiente
 
-- [ ] Criar os diretórios raiz `backend/`, `frontend/`, `pdv/` e `infra/`, cada um com README de responsabilidade.
-- [ ] Definir Python 3.12 ou superior para o backend e registrar a versão suportada.
-- [ ] Criar ambiente virtual local em `.venv/` sem versioná-lo.
-- [ ] Criar `backend/pyproject.toml` ou arquivos equivalentes com Django, DRF, PostgreSQL, Redis, Celery, configuração e testes.
-- [ ] Separar dependências de produção e desenvolvimento de forma reproduzível.
-- [ ] Criar `.env.example` sem segredos, documentando todas as variáveis obrigatórias.
-- [ ] Confirmar que `.env`, certificados, bancos SQLite, logs, volumes e builds são ignorados pelo Git.
-- [ ] Documentar em `README.md` os comandos para preparar, iniciar, testar e parar o ambiente local.
-- [ ] Validar instalação limpa das dependências em ambiente virtual novo.
+- [x] Criar os diretórios raiz `backend/`, `frontend/`, `pdv/` e `infra/`, cada um com README de responsabilidade.
+- [x] Definir Python 3.12 ou superior para o backend e registrar a versão suportada.
+- [x] Criar ambiente virtual local em `.venv/` sem versioná-lo.
+- [x] Criar `backend/pyproject.toml` ou arquivos equivalentes com Django, DRF, PostgreSQL, Redis, Celery, configuração e testes.
+- [x] Separar dependências de produção e desenvolvimento de forma reproduzível.
+- [x] Criar `.env.example` sem segredos, documentando todas as variáveis obrigatórias.
+- [x] Confirmar que `.env`, certificados, bancos SQLite, logs, volumes e builds são ignorados pelo Git.
+- [x] Documentar em `README.md` os comandos para preparar, iniciar, testar e parar o ambiente local.
+- [x] Validar instalação limpa das dependências em ambiente virtual novo.
 
 **Validação 0.1:** executar a instalação documentada e confirmar `python --version`, importação do Django e `git status --short` sem artefatos locais.
 
 #### 0.2 Infraestrutura local
 
-- [ ] Criar `compose.yaml` para PostgreSQL e Redis usando versões fixadas.
-- [ ] Configurar usuário, senha, database e portas somente por variáveis de ambiente.
-- [ ] Adicionar health check real para PostgreSQL.
-- [ ] Adicionar health check real para Redis.
-- [ ] Definir volumes locais persistentes abrangidos pelo `.gitignore`.
-- [ ] Configurar rede local sem expor serviços desnecessários.
-- [ ] Criar comandos documentados para subir, inspecionar e parar a infraestrutura.
-- [ ] Confirmar conexão do host com PostgreSQL e Redis.
+- [x] Criar `compose.yaml` para PostgreSQL e Redis usando versões fixadas.
+- [x] Configurar usuário, senha, database e portas somente por variáveis de ambiente.
+- [x] Adicionar health check real para PostgreSQL.
+- [x] Adicionar health check real para Redis.
+- [x] Definir volumes locais persistentes abrangidos pelo `.gitignore`.
+- [x] Configurar rede local sem expor serviços desnecessários.
+- [x] Criar comandos documentados para subir, inspecionar e parar a infraestrutura.
+- [x] Confirmar conexão do host com PostgreSQL e Redis.
 
 **Validação 0.2:** `docker compose config` deve ser válido e `docker compose up -d` deve deixar PostgreSQL e Redis saudáveis.
 
 #### 0.3 Backend Django e DRF
 
-- [ ] Criar o projeto Django em `backend/` com pacote principal `config`.
-- [ ] Separar settings em `base`, `local`, `test` e `production`.
-- [ ] Ler configurações exclusivamente de variáveis de ambiente, com defaults apenas quando seguros localmente.
-- [ ] Configurar PostgreSQL como banco principal; não usar SQLite como banco padrão do backend.
-- [ ] Configurar Redis para cache e broker do Celery.
-- [ ] Registrar Django REST Framework.
-- [ ] Criar apps `core`, `accounts`, `tenancy`, `audit` e `outbox`.
-- [ ] Configurar `LANGUAGE_CODE = "pt-br"` e `TIME_ZONE = "America/Sao_Paulo"`.
-- [ ] Criar endpoint público `/health/` com status da aplicação e checagens sanitizadas de dependências.
-- [ ] Criar middleware para `X-Correlation-ID`, reutilizando valor válido recebido ou gerando UUID.
-- [ ] Retornar `X-Correlation-ID` em todas as respostas HTTP.
-- [ ] Executar `python manage.py check` sem erros.
+- [x] Criar o projeto Django em `backend/` com pacote principal `config`.
+- [x] Separar settings em `base`, `local`, `test` e `production`.
+- [x] Ler configurações exclusivamente de variáveis de ambiente, com defaults apenas quando seguros localmente.
+- [x] Configurar PostgreSQL como banco principal; não usar SQLite como banco padrão do backend.
+- [x] Configurar Redis para cache e broker do Celery.
+- [x] Registrar Django REST Framework.
+- [x] Criar apps `core`, `accounts`, `tenancy`, `audit` e `outbox`.
+- [x] Configurar `LANGUAGE_CODE = "pt-br"` e `TIME_ZONE = "America/Sao_Paulo"`.
+- [x] Criar endpoint público `/health/` com status da aplicação e checagens sanitizadas de dependências.
+- [x] Criar middleware para `X-Correlation-ID`, reutilizando valor válido recebido ou gerando UUID.
+- [x] Retornar `X-Correlation-ID` em todas as respostas HTTP.
+- [x] Executar `python manage.py check` sem erros.
 
 **Validação 0.3:** iniciar o servidor, consultar `/health/`, conferir HTTP 200 e o cabeçalho `X-Correlation-ID`.
 
 #### 0.4 Identidade e estrutura multi-tenant
 
-- [ ] Criar usuário customizado antes da primeira migration funcional.
-- [ ] Usar e-mail normalizado como identificador de autenticação ou documentar formalmente alternativa aprovada.
-- [ ] Criar modelos `Tenant`, `Company` e `Branch` conforme a hierarquia `Tenant → Empresa → Filial`.
-- [ ] Criar modelo de membership entre usuário e tenant com papel e estado.
-- [ ] Criar vínculo explícito do usuário com empresas e filiais autorizadas quando aplicável.
-- [ ] Implementar modelo abstrato com UUID, `tenant_id`, `created_at` e `updated_at` para entidades tenant-scoped.
-- [ ] Impedir `tenant_id` nulo em entidades pertencentes a tenant.
-- [ ] Implementar resolução explícita do tenant ativo por requisição autenticada.
-- [ ] Rejeitar requisição tenant-scoped sem contexto válido.
-- [ ] Registrar migrations iniciais sem depender de dados manuais.
-- [ ] Criar comando ou fixture segura para dados locais de demonstração com dois tenants.
+- [x] Criar usuário customizado antes da primeira migration funcional.
+- [x] Usar e-mail normalizado como identificador de autenticação ou documentar formalmente alternativa aprovada.
+- [x] Criar modelos `Tenant`, `Company` e `Branch` conforme a hierarquia `Tenant → Empresa → Filial`.
+- [x] Criar modelo de membership entre usuário e tenant com papel e estado.
+- [x] Criar vínculo explícito do usuário com empresas e filiais autorizadas quando aplicável.
+- [x] Implementar modelo abstrato com UUID, `tenant_id`, `created_at` e `updated_at` para entidades tenant-scoped.
+- [x] Impedir `tenant_id` nulo em entidades pertencentes a tenant.
+- [x] Implementar resolução explícita do tenant ativo por requisição autenticada.
+- [x] Rejeitar requisição tenant-scoped sem contexto válido.
+- [x] Registrar migrations iniciais sem depender de dados manuais.
+- [x] Criar comando ou fixture segura para dados locais de demonstração com dois tenants.
 
 **Validação 0.4:** recriar o banco vazio, executar migrations e criar dois tenants com empresas, filiais e usuários distintos.
 
 #### 0.5 Isolamento, autorização e PostgreSQL RLS
 
-- [ ] Definir política que filtre todas as entidades tenant-scoped pelo tenant ativo.
-- [ ] Aplicar contexto do tenant na conexão PostgreSQL dentro de transação controlada.
-- [ ] Criar policies RLS para pelo menos uma entidade tenant-scoped representativa.
-- [ ] Habilitar e forçar RLS nas tabelas protegidas previstas no Sprint 0.
-- [ ] Garantir negação segura quando a variável de contexto do tenant estiver ausente.
-- [ ] Evitar queries globais em managers e serviços expostos a requisições.
-- [ ] Implementar autorização de empresa e filial além do filtro de tenant.
-- [ ] Padronizar resposta que não revele a existência de recurso pertencente a outro tenant.
-- [ ] Criar teste de leitura cross-tenant bloqueada pela aplicação.
-- [ ] Criar teste de leitura cross-tenant bloqueada pelo RLS.
-- [ ] Criar teste de escrita cross-tenant bloqueada.
-- [ ] Criar teste de IDOR para recurso de outro tenant.
-- [ ] Criar teste que falha de forma segura sem contexto de tenant.
+- [x] Definir política que filtre todas as entidades tenant-scoped pelo tenant ativo.
+- [x] Aplicar contexto do tenant na conexão PostgreSQL dentro de transação controlada.
+- [x] Criar policies RLS para pelo menos uma entidade tenant-scoped representativa.
+- [x] Habilitar e forçar RLS nas tabelas protegidas previstas no Sprint 0.
+- [x] Garantir negação segura quando a variável de contexto do tenant estiver ausente.
+- [x] Evitar queries globais em managers e serviços expostos a requisições.
+- [x] Implementar autorização de empresa e filial além do filtro de tenant.
+- [x] Padronizar resposta que não revele a existência de recurso pertencente a outro tenant.
+- [x] Criar teste de leitura cross-tenant bloqueada pela aplicação.
+- [x] Criar teste de leitura cross-tenant bloqueada pelo RLS.
+- [x] Criar teste de escrita cross-tenant bloqueada.
+- [x] Criar teste de IDOR para recurso de outro tenant.
+- [x] Criar teste que falha de forma segura sem contexto de tenant.
 
 **Validação 0.5:** executar a suíte multi-tenant com PostgreSQL real e obter zero acessos indevidos entre os dois tenants de teste.
 
 #### 0.6 Auditoria, Outbox e observabilidade mínima
 
-- [ ] Configurar logs JSON estruturados sem segredos ou dados fiscais sensíveis.
-- [ ] Incluir correlation ID, tenant ID, usuário e operação quando disponíveis.
-- [ ] Criar modelo append-only de auditoria com ator, ação, recurso, instante e contexto.
-- [ ] Registrar alterações administrativas relevantes sem armazenar senhas, tokens ou certificados.
-- [ ] Criar modelo de Transactional Outbox com UUID, tipo, versão, aggregate, payload, instante e estado.
-- [ ] Persistir evento de teste na Outbox na mesma transação da alteração de domínio.
-- [ ] Criar processamento idempotente inicial para eventos da Outbox.
-- [ ] Criar métrica ou log detectável para Outbox atrasada ou com falha.
-- [ ] Testar rollback conjunto entre alteração de domínio e evento da Outbox.
-- [ ] Testar que reprocessamento não duplica o efeito do evento.
+- [x] Configurar logs JSON estruturados sem segredos ou dados fiscais sensíveis.
+- [x] Incluir correlation ID, tenant ID, usuário e operação quando disponíveis.
+- [x] Criar modelo append-only de auditoria com ator, ação, recurso, instante e contexto.
+- [x] Registrar alterações administrativas relevantes sem armazenar senhas, tokens ou certificados.
+- [x] Criar modelo de Transactional Outbox com UUID, tipo, versão, aggregate, payload, instante e estado.
+- [x] Persistir evento de teste na Outbox na mesma transação da alteração de domínio.
+- [x] Criar processamento idempotente inicial para eventos da Outbox.
+- [x] Criar métrica ou log detectável para Outbox atrasada ou com falha.
+- [x] Testar rollback conjunto entre alteração de domínio e evento da Outbox.
+- [x] Testar que reprocessamento não duplica o efeito do evento.
 
 **Validação 0.6:** testes provam atomicidade da Outbox, idempotência e presença do correlation ID nos logs e respostas.
 
 #### 0.7 Qualidade, segurança e integração contínua
 
-- [ ] Configurar formatter e linter Python com regras versionadas.
-- [ ] Configurar verificação de tipos para o escopo adotado no Sprint 0.
-- [ ] Configurar runner de testes com settings próprios e PostgreSQL.
-- [ ] Configurar cobertura, sem usar porcentagem isolada como critério de qualidade.
-- [ ] Criar testes unitários para regras puras de tenancy.
-- [ ] Criar testes de integração para ORM, transações e RLS.
-- [ ] Criar testes de API para autenticação, contexto, IDOR e correlation ID.
-- [ ] Adicionar análise de dependências vulneráveis e segredos no pipeline.
-- [ ] Criar pipeline de CI para instalar dependências, validar migrations, lintar e testar.
-- [ ] Fazer o pipeline falhar quando migrations de models estiverem ausentes.
-- [ ] Executar `python manage.py check --deploy` com settings de produção simulados.
-- [ ] Documentar limitações conhecidas e riscos aceitos do Sprint 0.
+- [x] Configurar formatter e linter Python com regras versionadas.
+- [x] Configurar verificação de tipos para o escopo adotado no Sprint 0.
+- [x] Configurar runner de testes com settings próprios e PostgreSQL.
+- [x] Configurar cobertura, sem usar porcentagem isolada como critério de qualidade.
+- [x] Criar testes unitários para regras puras de tenancy.
+- [x] Criar testes de integração para ORM, transações e RLS.
+- [x] Criar testes de API para autenticação, contexto, IDOR e correlation ID.
+- [x] Adicionar análise de dependências vulneráveis e segredos no pipeline.
+- [x] Criar pipeline de CI para instalar dependências, validar migrations, lintar e testar.
+- [x] Fazer o pipeline falhar quando migrations de models estiverem ausentes.
+- [x] Executar `python manage.py check --deploy` com settings de produção simulados.
+- [x] Documentar limitações conhecidas e riscos aceitos do Sprint 0.
 
 **Limitações conhecidas e riscos aceitos:**
-- O usuário `zyrp` do PostgreSQL é superuser no ambiente local. RLS é bypassado pelo owner da tabela (comportamento padrão PostgreSQL). Em produção, o usuário da aplicação não deve ser superuser, e um migration deve REVOKE `ALL` + GRANT operações restritas. Documentado em `backend/tenancy/migrations/0002_rls_policies.py`.
-- `SECRET_KEY` curta é tolerada em CI/local; produção exige chave de 50+ caracteres gerada por `python -c 'import secrets; print(secrets.token_urlsafe(50))'`.
-- W021 (HSTS preload) é intencionalmente ignorado até definição de domínio permanente.
-- `var-annotated` em model fields Django é suprimido via mypy per-module override (comportamento padrão adotado).
+- O owner de migrations permanece separado do usuário de runtime. O runtime usa `zyrp_app`, sem `SUPERUSER` e sem `BYPASSRLS`; testes usam papel próprio, também sem bypass.
+- Credenciais de desenvolvimento presentes em exemplos e CI são placeholders não reutilizáveis. Produção exige valores externos e uma `SECRET_KEY` forte.
+- O backend está validado no Python 3.14 local e no Python 3.13 da CI; o requisito mínimo declarado continua sendo Python 3.12.
+- A verificação local do `pip-audit` pode depender do trust store corporativo do Windows. O gate estrito permanece obrigatório na CI Linux e não desabilita TLS.
+- `var-annotated` em campos de models Django é suprimido somente nos módulos de models definidos no `pyproject.toml`.
 
 **Validação 0.7:** pipeline completo passa em checkout limpo e nenhuma credencial aparece no repositório.
 
 #### 0.8 Aceite e encerramento
 
-- [ ] Executar `python manage.py check` e registrar saída sem erros.
-- [ ] Executar verificação de migrations pendentes e obter resultado limpo.
-- [ ] Executar toda a suíte de testes e obter zero falhas.
-- [ ] Recriar o ambiente local seguindo somente o README.
-- [ ] Validar `/health/` com PostgreSQL e Redis disponíveis.
-- [ ] Validar isolamento entre dois tenants por aplicação e RLS.
-- [ ] Revisar `git diff` para impedir segredos, certificados, dumps ou artefatos locais.
-- [ ] Atualizar este checklist somente com tarefas efetivamente comprovadas.
-- [ ] Registrar evidências, pendências e riscos no relatório final da sprint.
-- [ ] Criar commit final `feat: sprint 0 - fundação técnica`.
-- [ ] Parar e solicitar aprovação antes de detalhar ou iniciar o Sprint 1.
+- [x] Executar `python manage.py check` e registrar saída sem erros.
+- [x] Executar verificação de migrations pendentes e obter resultado limpo.
+- [x] Executar toda a suíte de testes e obter zero falhas.
+- [x] Recriar o ambiente local seguindo somente o README.
+- [x] Validar `/health/` com PostgreSQL e Redis disponíveis.
+- [x] Validar isolamento entre dois tenants por aplicação e RLS.
+- [x] Revisar `git diff` para impedir segredos, certificados, dumps ou artefatos locais.
+- [x] Atualizar este checklist somente com tarefas efetivamente comprovadas.
+- [x] Registrar evidências, pendências e riscos no relatório final da sprint.
+- [x] Criar commit final `feat: sprint 0 - fundação técnica`.
+- [x] Parar e solicitar aprovação antes de detalhar ou iniciar o Sprint 1.
 
 **Critérios de aceite da Sprint 0:**
 

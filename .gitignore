@@ -24,6 +24,7 @@ venv/
 env/
 ENV/
 .pytest_cache/
+.test-cache/
 .mypy_cache/
 .ruff_cache/
 .coverage

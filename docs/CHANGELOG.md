@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes na base documental são registradas aqui.
 
+## 2026-07-14 — Sprint 0 Foundation
+
+### Added
+
+- Fundação Django/DRF com PostgreSQL, Redis, Celery, auditoria e Transactional Outbox.
+- Isolamento multi-tenant com contexto explícito, autorização, RLS forçado e testes de IDOR.
+- Papéis separados para migrations, runtime e testes, sem bypass de RLS na aplicação.
+- Pipeline de qualidade e segurança com Ruff, mypy, pytest, cobertura, `pip-audit` e detecção de segredos.
+- Relatório final com evidências e riscos residuais da Sprint 0.
+
+### Fixed
+
+- Corrigidos o aceite prematuro, migrations pendentes, testes insuficientes de isolamento e exposição das portas locais.
+
 ## 2026-07-14 — Documentation Foundation v0.1.0
 
 ### Added

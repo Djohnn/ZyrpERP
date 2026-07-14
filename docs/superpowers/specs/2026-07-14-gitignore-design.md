@@ -2,7 +2,7 @@
 
 **Status:** Approved for review  
 **Data:** 2026-07-14  
-**Escopo:** `.gitignore` raiz da Enterprise Commerce Platform
+**Escopo:** `.gitignore` raiz do Zyrp
 
 ## Objetivo
 
@@ -47,4 +47,3 @@ O arquivo será dividido em seções comentadas por tecnologia. As regras espec�
 - scaffold Django, React ou Electron;
 - gestão de segredos em produção;
 - alteração do histórico Git para remover segredos previamente publicados.
-

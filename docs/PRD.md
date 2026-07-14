@@ -29,7 +29,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 ## Como acompanhar
 
 - `- [ ]`: tarefa pendente ou ainda não validada.
-- `- [x]`: tarefa implementada e comprovada pela validação indicada.
+- `- [ ]`: tarefa implementada e comprovada pela validação indicada.
 - `BLOQUEADO:`: impedimento registrado abaixo da tarefa; a caixa permanece aberta.
 - Uma tarefa parcialmente concluída continua aberta.
 - O agente atualiza a caixa somente depois de executar a validação correspondente.
@@ -39,7 +39,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 | Sprint | Estado | Objetivo resumido |
 |---:|---|---|
-| 0 | Pronta para execução | Fundação técnica e isolamento multi-tenant |
+| 0 | Em correção | Fundação técnica e isolamento multi-tenant |
 | 1 | A detalhar | Autenticação, onboarding e autorização |
 | 2 | A detalhar | Catálogo e cadastros-base |
 | 3 | A detalhar | Estoque e movimentações |
@@ -54,7 +54,9 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 ### Sprint 0 — Fundação Técnica do Zyrp
 
 **Duração de referência:** 1 a 2 semanas  
-**Estado:** Pronta para execução
+**Estado:** Em correção
+
+**Correção de aceite:** auditoria independente identificou bypass de RLS, ausência de IDOR real, migrations pendentes e checkboxes sem evidência. Os itens afetados permanecerão abertos até nova validação.
 
 **Objetivo:** disponibilizar uma base Django reproduzível, observável e testada, com autenticação preparada, hierarquia organizacional e isolamento multi-tenant comprovado antes da implementação dos módulos comerciais.
 
@@ -169,6 +171,12 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [ ] Fazer o pipeline falhar quando migrations de models estiverem ausentes.
 - [ ] Executar `python manage.py check --deploy` com settings de produção simulados.
 - [ ] Documentar limitações conhecidas e riscos aceitos do Sprint 0.
+
+**Limitações conhecidas e riscos aceitos:**
+- O usuário `zyrp` do PostgreSQL é superuser no ambiente local. RLS é bypassado pelo owner da tabela (comportamento padrão PostgreSQL). Em produção, o usuário da aplicação não deve ser superuser, e um migration deve REVOKE `ALL` + GRANT operações restritas. Documentado em `backend/tenancy/migrations/0002_rls_policies.py`.
+- `SECRET_KEY` curta é tolerada em CI/local; produção exige chave de 50+ caracteres gerada por `python -c 'import secrets; print(secrets.token_urlsafe(50))'`.
+- W021 (HSTS preload) é intencionalmente ignorado até definição de domínio permanente.
+- `var-annotated` em model fields Django é suprimido via mypy per-module override (comportamento padrão adotado).
 
 **Validação 0.7:** pipeline completo passa em checkout limpo e nenhuma credencial aparece no repositório.
 

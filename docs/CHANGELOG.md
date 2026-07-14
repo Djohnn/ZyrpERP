@@ -11,6 +11,7 @@ Todas as mudanças relevantes na base documental são registradas aqui.
 - Estrutura documental centralizada em `C:\ERP\docs`.
 - Padrão de documentos, índice e porta de entrada.
 - Primeiros drafts de governança e produto.
+- Seis ADRs fundamentais, SAD, Engineering Handbook e desenho de domínio.
 
 ### Decisions
 
@@ -25,4 +26,3 @@ Todas as mudanças relevantes na base documental são registradas aqui.
 
 - Pacote inicial de cinco rascunhos em `99_Archive/initial-package`.
 - PRD original e fonte HTML em `99_Archive/source-prd`.
-

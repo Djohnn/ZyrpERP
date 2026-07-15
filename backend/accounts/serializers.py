@@ -16,3 +16,11 @@ class TokenSerializer(serializers.Serializer):
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+
+
+class EmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetSerializer(TokenSerializer):
+    password = serializers.CharField(write_only=True, min_length=12)

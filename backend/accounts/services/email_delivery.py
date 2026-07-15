@@ -9,3 +9,12 @@ def send_confirmation_email(email, token):
         settings.DEFAULT_FROM_EMAIL,
         [email],
     )
+
+
+def send_password_reset_email(email, token):
+    send_mail(
+        'Redefina sua senha do Zyrp',
+        f'Redefina sua senha usando token={token}',
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+    )

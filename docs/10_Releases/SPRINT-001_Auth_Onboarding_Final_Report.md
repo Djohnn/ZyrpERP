@@ -1,7 +1,7 @@
 # Sprint 1 — Relatório Final de Autenticação e Onboarding
 
 Data: 2026-07-14
-Estado: validação local concluída; CI remota pendente
+Estado: concluída
 
 ## Resultado
 
@@ -24,6 +24,8 @@ recuperação de senha, capabilities, convites e gestão de memberships por tena
 - redefinição de senha invalida sessões existentes e preserva a exigência de MFA;
 - filial de outro tenant é rejeitada antes de qualquer atualização de membership;
 - hook de segredos aprovado com baseline revisado.
+- auditoria OSV local sem vulnerabilidades após atualização do `cryptography`;
+- GitHub Actions aprovado, incluindo `pip-audit --strict`, segredos e deploy check.
 
 ## Segurança de dados
 
@@ -33,8 +35,8 @@ uma chave efêmera durante cada execução.
 
 ## Riscos residuais
 
-- A auditoria local de dependências foi bloqueada pela cadeia TLS da máquina; o
-  `pip-audit --strict` permanece obrigatório no GitHub Actions.
+- O `pip-audit` local depende da cadeia TLS da máquina; a auditoria OSV local e o
+  `pip-audit --strict` no GitHub Actions foram aprovados.
 - E-mail de produção depende de SMTP configurado pelo operador e precisa de teste de
   entrega no ambiente de homologação.
 - O frontend de onboarding e as telas MFA pertencem a uma sprint posterior; esta entrega
@@ -43,5 +45,5 @@ uma chave efêmera durante cada execução.
 
 ## Encerramento
 
-O aceite definitivo depende do commit final, integração em `master`, CI remota verde e
-confirmação do worktree limpo e sincronizado.
+A Sprint 1 foi integrada em `master`, validada pela CI remota e encerrada com o worktree
+de feature removido e a branch local sincronizada com `origin/master`.

@@ -210,7 +210,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 ### Sprint 1 — Autenticação, Onboarding e Autorização
 
 **Duração de referência:** 2 semanas
-**Estado:** Implementada e validada localmente; CI remota pendente
+**Estado:** Concluída
 
 **Objetivo:** permitir criação controlada do tenant, entrada de usuários, recuperação de acesso, MFA, memberships e permissões por capability.
 
@@ -337,12 +337,12 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [x] Executar suíte completa com PostgreSQL real e cobertura mínima mantida.
 - [x] Executar testes de isolamento, RLS e IDOR sem regressão.
 - [x] Executar check de produção simulado.
-- [ ] Executar auditoria de dependências e hook de segredos na CI.
+- [x] Executar auditoria de dependências e hook de segredos na CI.
 - [x] Registrar evidências e riscos no relatório final da sprint.
 - [x] Atualizar checklist somente após validação correspondente.
 - [x] Criar commit final `feat: sprint 1 - autenticação e onboarding`.
-- [ ] Enviar para `master` e obter CI remota verde.
-- [ ] Confirmar worktree limpo e sincronizado com `origin/master`.
+- [x] Enviar para `master` e obter CI remota verde.
+- [x] Confirmar worktree limpo e sincronizado com `origin/master`.
 
 **Critérios de aceite da Sprint 1:**
 

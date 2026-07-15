@@ -36,6 +36,7 @@ class CustomUserManager(BaseUserManager):
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
 
     objects = CustomUserManager()  # type: ignore[assignment]
 

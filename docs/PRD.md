@@ -414,11 +414,11 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 2.6 APIs, auditoria e eventos
 
-- [ ] Criar CRUD seguro de categorias, unidades e produtos.
-- [ ] Criar endpoints de conversões, códigos e preços.
-- [ ] Criar consulta de preço vigente por filial e instante.
-- [ ] Implementar paginação, busca, filtros e ordenação segura.
-- [ ] Padronizar erros RFC 9457 com códigos estáveis.
+- [x] Criar CRUD seguro de categorias, unidades e produtos.
+- [x] Criar endpoints de conversões, códigos e preços.
+- [x] Criar consulta de preço vigente por filial e instante.
+- [x] Implementar paginação, busca, filtros e ordenação segura.
+- [x] Padronizar erros RFC 9457 com códigos estáveis.
 - [ ] Auditar criação, alteração, preço e inativação.
 - [ ] Persistir eventos de catálogo na Outbox na mesma transação.
 - [ ] Documentar endpoints no OpenAPI e eventos no catálogo de domínio.

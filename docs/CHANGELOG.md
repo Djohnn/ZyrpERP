@@ -2,6 +2,14 @@
 
 Todas as mudanças relevantes na base documental são registradas aqui.
 
+## 2026-07-14 — Sprint 2 and Sprint 3 Design
+
+### Added
+
+- Especificação do catálogo com unidades, conversões, códigos e preços por filial.
+- Especificação do estoque com locais, lotes opcionais e movimentos imutáveis.
+- Decisões de saldo não negativo, idempotência, concorrência e transferências atômicas.
+
 ## 2026-07-14 — Sprint 1 Authentication and Onboarding
 
 ### Added

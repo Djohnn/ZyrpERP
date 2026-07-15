@@ -5,6 +5,8 @@ Registro oficial dos documentos do Zyrp.
 | Código | Documento | Versão | Status | Caminho |
 |---|---|---:|---|---|
 | DESIGN-FOUNDATION-001 | Zyrp Foundation Design | 0.1.1 | Review | `superpowers/specs/2026-07-14-zyrp-foundation-design.md` |
+| DESIGN-CATALOG-002 | Sprint 2 Catalog Design | 1.0.0 | Approved | `superpowers/specs/2026-07-14-sprint-2-catalog-design.md` |
+| DESIGN-INVENTORY-003 | Sprint 3 Inventory Design | 1.0.0 | Approved | `superpowers/specs/2026-07-14-sprint-3-inventory-design.md` |
 | PLAN-DOCBASE-001 | Documentation Baseline Plan | 0.1.0 | Approved | `superpowers/plans/2026-07-14-documentation-baseline-implementation-plan.md` |
 | PRD-OPS-001 | Operational Sprint Roadmap | 0.1.0 | Review | `PRD.md` |
 | PROMPT-SPRINT-001 | Universal Sprint Execution Prompt | 0.1.0 | Review | `PROMPT_EXECUCAO_SPRINT.md` |
@@ -34,7 +36,7 @@ Registro oficial dos documentos do Zyrp.
 | REL-001 | Release Strategy | 0.1.0 | Draft | `10_Releases/REL-001_Release_Strategy_v0.1.0.md` |
 | MILESTONE-001 | Documentation Foundation | 0.1.0 | Review | `10_Releases/MILESTONE-001_Documentation_Foundation.md` |
 | MILESTONE-001-MANIFEST | Documentation Foundation Manifest | 0.1.0 | Generated | `10_Releases/MILESTONE-001_MANIFEST.txt` |
-| SPRINT-001-REPORT | Sprint 1 Authentication and Onboarding Report | 1.0.0 | Validated locally | `10_Releases/SPRINT-001_Auth_Onboarding_Final_Report.md` |
+| SPRINT-001-REPORT | Sprint 1 Authentication and Onboarding Report | 1.0.0 | Complete | `10_Releases/SPRINT-001_Auth_Onboarding_Final_Report.md` |
 
 ## Material histórico
 

@@ -155,3 +155,21 @@ class UserBranch(models.Model):
                 raise ValidationError(
                     {'user': 'User needs an active membership in the branch tenant.'}
                 )
+
+
+class Invitation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='invitations')
+    email = models.EmailField()
+    role = models.CharField(max_length=20, choices=TenantMembership._meta.get_field('role').choices)
+    token_digest = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_invitations',
+    )
+    branches = models.ManyToManyField(Branch, blank=True, related_name='invitations')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']

@@ -27,3 +27,12 @@ def send_mfa_code_email(email, code):
         settings.DEFAULT_FROM_EMAIL,
         [email],
     )
+
+
+def send_invitation_email(email, token):
+    send_mail(
+        'Convite para o Zyrp',
+        f'Aceite seu convite usando token={token}',
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+    )

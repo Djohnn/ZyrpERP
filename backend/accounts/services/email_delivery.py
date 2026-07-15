@@ -18,3 +18,12 @@ def send_password_reset_email(email, token):
         settings.DEFAULT_FROM_EMAIL,
         [email],
     )
+
+
+def send_mfa_code_email(email, code):
+    send_mail(
+        'Código de segurança do Zyrp',
+        f'Seu código de uso único é code={code}',
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+    )

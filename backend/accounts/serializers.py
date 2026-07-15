@@ -24,3 +24,17 @@ class EmailSerializer(serializers.Serializer):
 
 class PasswordResetSerializer(TokenSerializer):
     password = serializers.CharField(write_only=True, min_length=12)
+
+
+class TenantSelectionSerializer(serializers.Serializer):
+    tenant_id = serializers.UUIDField()
+
+
+class TOTPConfirmationSerializer(serializers.Serializer):
+    device_id = serializers.UUIDField()
+    code = serializers.RegexField(r'^\d{6}$')
+
+
+class EmailChallengeSerializer(serializers.Serializer):
+    challenge_id = serializers.UUIDField()
+    code = serializers.RegexField(r'^\d{6}$')

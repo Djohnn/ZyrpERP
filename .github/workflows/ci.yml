@@ -30,6 +30,10 @@ env:
   POSTGRES_TEST_DB: test_zyrp
   CELERY_BROKER_URL: redis://localhost:6379/1
   CELERY_RESULT_BACKEND: redis://localhost:6379/1
+  EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
+  EMAIL_HOST: localhost
+  EMAIL_HOST_USER: ci-user
+  EMAIL_HOST_PASSWORD: ci-only-placeholder
 
 jobs:
   ci:
@@ -77,6 +81,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+
+      - name: Generate ephemeral MFA encryption key
+        run: python -c "from cryptography.fernet import Fernet; print('MFA_ENCRYPTION_KEY=' + Fernet.generate_key().decode())" >> "$GITHUB_ENV"
 
       - name: Bootstrap unprivileged database roles
         run: bash ../infra/postgres/init/001_roles.sh

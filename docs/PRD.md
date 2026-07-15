@@ -340,7 +340,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [ ] Executar auditoria de dependências e hook de segredos na CI.
 - [x] Registrar evidências e riscos no relatório final da sprint.
 - [x] Atualizar checklist somente após validação correspondente.
-- [ ] Criar commit final `feat: sprint 1 - autenticação e onboarding`.
+- [x] Criar commit final `feat: sprint 1 - autenticação e onboarding`.
 - [ ] Enviar para `master` e obter CI remota verde.
 - [ ] Confirmar worktree limpo e sincronizado com `origin/master`.
 

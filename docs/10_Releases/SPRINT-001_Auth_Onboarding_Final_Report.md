@@ -1,6 +1,6 @@
 # Sprint 1 — Relatório Final de Autenticação e Onboarding
 
-Data: 2026-07-14  
+Data: 2026-07-14
 Estado: validação local concluída; CI remota pendente
 
 ## Resultado

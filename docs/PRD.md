@@ -357,7 +357,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 2 — Catálogo e Cadastros-base
 
-**Estado:** Planejada e aprovada para execução.
+**Estado:** Concluída
 
 **Objetivo:** implementar produtos, categorias, unidades, códigos e preços essenciais.
 

@@ -405,12 +405,12 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 2.5 Segurança multi-tenant
 
-- [ ] Aplicar manager tenant-scoped em entidades do catálogo.
-- [ ] Habilitar e forçar RLS nas tabelas tenant-scoped.
-- [ ] Negar leitura e escrita sem contexto de tenant.
-- [ ] Validar que preço por filial pertence ao tenant ativo.
-- [ ] Criar testes cross-tenant por aplicação e RLS.
-- [ ] Criar testes de IDOR para produto, código e preço.
+- [x] Aplicar manager tenant-scoped em entidades do catálogo.
+- [x] Habilitar e forçar RLS nas tabelas tenant-scoped.
+- [x] Negar leitura e escrita sem contexto de tenant.
+- [x] Validar que preço por filial pertence ao tenant ativo.
+- [x] Criar testes cross-tenant por aplicação e RLS.
+- [x] Criar testes de IDOR para produto, código e preço.
 
 #### 2.6 APIs, auditoria e eventos
 

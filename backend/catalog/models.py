@@ -126,3 +126,106 @@ class Product(TimeStampedModel, TenantScopedModel):
                 raise ValidationError(
                     {'category': 'Category must belong to the same tenant.'}
                 )
+
+
+class ProductUnit(TimeStampedModel, TenantScopedModel):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='commercial_units',
+    )
+    unit = models.ForeignKey(Unit, on_delete=models.PROTECT)
+    factor = models.DecimalField(max_digits=18, decimal_places=6)
+    is_active = models.BooleanField(default=True)
+    version = models.PositiveIntegerField(default=1)
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['product', 'unit']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'product', 'unit'],
+                name='uniq_productunit_tenant_product_unit',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(factor__gt=0),
+                name='productunit_factor_positive',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.product.sku} → {self.unit.symbol} ×{self.factor}'
+
+    def clean(self):
+        super().clean()
+        if self.factor <= 0:
+            raise ValidationError({'factor': 'Conversion factor must be positive.'})
+        if self.product_id and self.tenant_id:
+            if self.product.tenant_id != self.tenant_id:
+                raise ValidationError(
+                    {'product': 'Product must belong to the same tenant.'}
+                )
+        if self.unit_id and self.tenant_id:
+            if self.unit.tenant_id != self.tenant_id:
+                raise ValidationError(
+                    {'unit': 'Unit must belong to the same tenant.'}
+                )
+
+
+CODE_TYPE_CHOICES = [
+    ('internal', 'Internal'),
+    ('ean', 'EAN'),
+    ('gtin', 'GTIN'),
+    ('supplier', 'Supplier'),
+]
+
+
+class ProductCode(TimeStampedModel, TenantScopedModel):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='codes',
+    )
+    code_type = models.CharField(max_length=20, choices=CODE_TYPE_CHOICES)
+    value = models.CharField(max_length=64)
+    is_principal = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    version = models.PositiveIntegerField(default=1)
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['product', 'code_type', 'value']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'code_type', 'value'],
+                condition=models.Q(is_active=True),
+                name='uniq_productcode_tenant_type_value_active',
+            ),
+            models.UniqueConstraint(
+                fields=['tenant', 'product', 'code_type'],
+                condition=models.Q(is_principal=True),
+                name='uniq_productcode_principal_per_type',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.value} ({self.code_type}) [{self.tenant.name}]'
+
+    def save(self, *args, **kwargs):
+        self.value = self.value.strip().upper()
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        if self.product_id and self.tenant_id:
+            if self.product.tenant_id != self.tenant_id:
+                raise ValidationError(
+                    {'product': 'Product must belong to the same tenant.'}
+                )
+        if self.code_type in ('ean', 'gtin'):
+            from catalog.services.codes import validate_gtin
+
+            if not validate_gtin(self.value):
+                raise ValidationError(
+                    {'value': f'Invalid {self.code_type.upper()} check digit.'}
+                )

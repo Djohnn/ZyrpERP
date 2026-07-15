@@ -386,13 +386,13 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 2.3 Conversões e códigos
 
-- [ ] Criar unidades comerciais por produto com fator positivo.
-- [ ] Calcular conversões somente com `Decimal`.
-- [ ] Preservar versões de fatores utilizados por fatos posteriores.
-- [ ] Criar códigos internos, EAN, GTIN e de fornecedor.
-- [ ] Validar tamanho e dígito verificador de EAN/GTIN.
-- [ ] Garantir código ativo único por tenant.
-- [ ] Permitir somente um código principal por produto e tipo.
+- [x] Criar unidades comerciais por produto com fator positivo.
+- [x] Calcular conversões somente com `Decimal`.
+- [x] Preservar versões de fatores utilizados por fatos posteriores.
+- [x] Criar códigos internos, EAN, GTIN e de fornecedor.
+- [x] Validar tamanho e dígito verificador de EAN/GTIN.
+- [x] Garantir código ativo único por tenant.
+- [x] Permitir somente um código principal por produto e tipo.
 
 #### 2.4 Precificação
 

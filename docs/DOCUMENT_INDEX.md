@@ -34,6 +34,7 @@ Registro oficial dos documentos do Zyrp.
 | REL-001 | Release Strategy | 0.1.0 | Draft | `10_Releases/REL-001_Release_Strategy_v0.1.0.md` |
 | MILESTONE-001 | Documentation Foundation | 0.1.0 | Review | `10_Releases/MILESTONE-001_Documentation_Foundation.md` |
 | MILESTONE-001-MANIFEST | Documentation Foundation Manifest | 0.1.0 | Generated | `10_Releases/MILESTONE-001_MANIFEST.txt` |
+| SPRINT-001-REPORT | Sprint 1 Authentication and Onboarding Report | 1.0.0 | Validated locally | `10_Releases/SPRINT-001_Auth_Onboarding_Final_Report.md` |
 
 ## Material histórico
 

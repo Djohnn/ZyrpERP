@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes na base documental são registradas aqui.
 
+## 2026-07-14 — Sprint 1 Authentication and Onboarding
+
+### Added
+
+- Onboarding atômico do primeiro administrador, com confirmação de e-mail.
+- Sessões Django protegidas por CSRF e elevação após MFA.
+- MFA por TOTP, e-mail e códigos de recuperação.
+- Recuperação de senha com revogação de sessões existentes.
+- Capabilities, convites, memberships e escopo de filial por tenant.
+- Contratos OpenAPI e relatório de evidências da Sprint 1.
+
+### Security
+
+- Tokens e códigos temporários persistidos somente como digest.
+- Segredos TOTP cifrados por chave externa ao repositório.
+- Rate limiting, respostas anti-enumeração, auditoria sanitizada e testes de IDOR/RLS.
+
 ## 2026-07-14 — Sprint 0 Foundation
 
 ### Added

@@ -1,3 +1,5 @@
+import base64
+import hashlib
 from pathlib import Path
 
 from decouple import config
@@ -88,6 +90,21 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SITE_ID = 1
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
+
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@zyrp.local')
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend',
+)
+AUTH_TOKEN_TTL_MINUTES = config('AUTH_TOKEN_TTL_MINUTES', default=30, cast=int)
+EMAIL_MFA_TTL_MINUTES = config('EMAIL_MFA_TTL_MINUTES', default=10, cast=int)
+EMAIL_MFA_MAX_ATTEMPTS = config('EMAIL_MFA_MAX_ATTEMPTS', default=5, cast=int)
+EMAIL_MFA_RESEND_COOLDOWN_SECONDS = config(
+    'EMAIL_MFA_RESEND_COOLDOWN_SECONDS', default=60, cast=int,
+)
+_DEV_MFA_KEY = base64.urlsafe_b64encode(
+    hashlib.sha256(b'zyrp-local-development-only').digest(),
+).decode()
+MFA_ENCRYPTION_KEY = config('MFA_ENCRYPTION_KEY', default=_DEV_MFA_KEY)
 
 LOG_LEVEL = config('LOG_LEVEL', default='INFO')
 

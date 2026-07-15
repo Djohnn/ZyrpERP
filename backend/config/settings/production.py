@@ -5,6 +5,7 @@ from .base import *
 DEBUG = False
 
 SECRET_KEY = config('SECRET_KEY')
+MFA_ENCRYPTION_KEY = config('MFA_ENCRYPTION_KEY')
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
@@ -31,6 +32,13 @@ CACHES = {
 
 CELERY_BROKER_URL = config('CELERY_BROKER_URL')
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND')
+
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True

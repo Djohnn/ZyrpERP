@@ -107,6 +107,23 @@ class TenantMembership(models.Model):
         return f'{self.user.email} @ {self.tenant.name}'
 
 
+class TenantMFAPolicy(models.Model):
+    tenant = models.OneToOneField(
+        Tenant, on_delete=models.CASCADE, related_name='mfa_policy',
+    )
+    allow_totp = models.BooleanField(default=True)
+    allow_email = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if not self.allow_totp and not self.allow_email:
+            raise ValidationError('At least one MFA method must remain enabled.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
 class UserBranch(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,

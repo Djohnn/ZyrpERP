@@ -58,5 +58,6 @@ superpowers/plans/2026-07-14-sprint-0-remediation-implementation-plan.md	12368	2
 superpowers/plans/2026-07-14-universal-sprint-runner-implementation-plan.md	7661	208e280672f675682f5a8ed7d7527dc1ff73825ade48661ff7e3f60b55e6f82a
 superpowers/specs/2026-07-14-gitignore-design.md	2356	83727229d36847c8c8239712685ad7969310472f4a20d2c7f7a909091c162f04
 superpowers/specs/2026-07-14-sprint-0-remediation-design.md	5840	976acc321f58a551549444dcfce0c1e845b4e6f2f172d1a5f8122cbd0b1745ab
+superpowers/specs/2026-07-14-sprint-1-auth-onboarding-design.md	10256	3904d871e2b53edec66de034ecf7e9ae8baa5beb2e3bde0248ff56f03926ae60
 superpowers/specs/2026-07-14-universal-sprint-runner-design.md	5393	9c2fffcad53432e12f708e0edb243a6053df2ae45d44a4ef00d1ef7a617b4ddf
 superpowers/specs/2026-07-14-zyrp-foundation-design.md	11672	469b71e98e53bcbb9c4943d44d0d628339ce92b4c816e0e8135be0bde7e607cf

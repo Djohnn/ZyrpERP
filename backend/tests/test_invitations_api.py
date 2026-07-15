@@ -16,6 +16,10 @@ def test_admin_invites_and_matching_user_accepts(client):
     tenant = Tenant.objects.create(name='Invite Tenant', slug='invite-tenant')
     TenantMembership.objects.create(user=admin, tenant=tenant, role='admin')
     client.force_login(admin)
+    session = client.session
+    session['mfa_tenant_id'] = str(tenant.id)
+    session['mfa_method'] = 'totp'
+    session.save()
     response = client.post(
         '/api/v1/invitations/', {'email': invitee.email, 'role': 'operator'},
         content_type='application/json', HTTP_X_TENANT_ID=str(tenant.id),

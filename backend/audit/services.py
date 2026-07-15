@@ -4,6 +4,9 @@ SENSITIVE_KEY_PARTS = (
     'secret',
     'certificate',
     'private_key',
+    'otp',
+    'mfa_code',
+    'recovery_code',
 )
 
 

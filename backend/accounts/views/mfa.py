@@ -21,6 +21,7 @@ from accounts.services.mfa import (
 )
 from audit.services import create_audit_record
 from tenancy.models import TenantMFAPolicy, TenantMembership
+from accounts.throttles import MFAThrottle
 
 User = get_user_model()
 
@@ -53,6 +54,7 @@ def _complete_login(request, user, method, tenant_id):
 class TOTPEnrollmentView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [MFAThrottle]
 
     def post(self, request):
         serializer = TenantSelectionSerializer(data=request.data)
@@ -71,6 +73,7 @@ class TOTPEnrollmentView(APIView):
 class TOTPConfirmationView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [MFAThrottle]
 
     def post(self, request):
         serializer = TOTPConfirmationSerializer(data=request.data)
@@ -88,6 +91,7 @@ class TOTPConfirmationView(APIView):
 class EmailMFASendView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [MFAThrottle]
 
     def post(self, request):
         serializer = TenantSelectionSerializer(data=request.data)
@@ -108,6 +112,7 @@ class EmailMFASendView(APIView):
 class MFAChallengeView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [MFAThrottle]
 
     def post(self, request):
         serializer = EmailChallengeSerializer(data=request.data)

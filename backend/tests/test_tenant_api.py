@@ -36,6 +36,10 @@ class TenantCompanyAPITest(TestCase):
 
     def setUp(self):
         self.client.force_login(self.user_a)
+        session = self.client.session
+        session['mfa_tenant_id'] = str(self.tenant_a.id)
+        session['mfa_method'] = 'totp'
+        session.save()
 
     def test_tenant_header_is_required(self):
         response = self.client.get('/api/v1/companies/')

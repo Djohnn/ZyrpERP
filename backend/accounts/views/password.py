@@ -9,6 +9,7 @@ from accounts.serializers import EmailSerializer, PasswordResetSerializer
 from accounts.services.email_delivery import send_password_reset_email
 from accounts.tokens import consume_token, issue_token
 from audit.services import create_audit_record
+from accounts.throttles import PasswordRecoveryThrottle
 
 User = get_user_model()
 
@@ -16,6 +17,7 @@ User = get_user_model()
 class PasswordForgotView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [PasswordRecoveryThrottle]
 
     def post(self, request):
         serializer = EmailSerializer(data=request.data)

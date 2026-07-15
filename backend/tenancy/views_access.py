@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from audit.services import create_audit_record
 from tenancy.capabilities import role_allows
 from tenancy.models import Invitation, TenantMembership, TenantMFAPolicy
-from tenancy.permissions import HasActiveTenant
+from tenancy.permissions import HasActiveTenant, HasVerifiedMFA
 from tenancy.serializers_access import (
     InvitationAcceptSerializer,
     InvitationSerializer,
@@ -18,7 +18,7 @@ from tenancy.services.invitations import accept_invitation, create_invitation
 
 class InvitationListCreateView(generics.ListCreateAPIView):
     serializer_class = InvitationSerializer
-    permission_classes = [IsAuthenticated, HasActiveTenant]
+    permission_classes = [IsAuthenticated, HasActiveTenant, HasVerifiedMFA]
 
     def get_queryset(self):
         return Invitation.objects.filter(tenant=self.request.tenant)
@@ -62,7 +62,7 @@ class InvitationAcceptView(APIView):
 
 class MembershipListView(generics.ListAPIView):
     serializer_class = MembershipSerializer
-    permission_classes = [IsAuthenticated, HasActiveTenant]
+    permission_classes = [IsAuthenticated, HasActiveTenant, HasVerifiedMFA]
 
     def get_queryset(self):
         return TenantMembership.objects.filter(tenant=self.request.tenant).select_related('user')
@@ -70,7 +70,7 @@ class MembershipListView(generics.ListAPIView):
 
 class MembershipDetailView(generics.UpdateAPIView):
     serializer_class = MembershipSerializer
-    permission_classes = [IsAuthenticated, HasActiveTenant]
+    permission_classes = [IsAuthenticated, HasActiveTenant, HasVerifiedMFA]
     http_method_names = ['patch']
 
     def get_queryset(self):
@@ -97,7 +97,7 @@ class MembershipDetailView(generics.UpdateAPIView):
 
 class MFAPolicyView(generics.RetrieveUpdateAPIView):
     serializer_class = MFAPolicySerializer
-    permission_classes = [IsAuthenticated, HasActiveTenant]
+    permission_classes = [IsAuthenticated, HasActiveTenant, HasVerifiedMFA]
     http_method_names = ['get', 'patch']
 
     def get_object(self):

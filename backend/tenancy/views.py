@@ -3,13 +3,13 @@ from rest_framework.permissions import IsAuthenticated
 
 from audit.services import create_audit_record
 from tenancy.models import Company
-from tenancy.permissions import HasActiveTenant
+from tenancy.permissions import HasActiveTenant, HasVerifiedMFA
 from tenancy.serializers import CompanySerializer
 
 
 class CompanyListCreateView(generics.ListCreateAPIView):
     serializer_class = CompanySerializer
-    permission_classes = [IsAuthenticated, HasActiveTenant]
+    permission_classes = [IsAuthenticated, HasActiveTenant, HasVerifiedMFA]
 
     def get_queryset(self):
         return Company.objects.filter(tenant=self.request.tenant).order_by('name')
@@ -29,7 +29,7 @@ class CompanyListCreateView(generics.ListCreateAPIView):
 
 class CompanyDetailView(generics.RetrieveAPIView):
     serializer_class = CompanySerializer
-    permission_classes = [IsAuthenticated, HasActiveTenant]
+    permission_classes = [IsAuthenticated, HasActiveTenant, HasVerifiedMFA]
 
     def get_queryset(self):
         return Company.objects.filter(tenant=self.request.tenant)

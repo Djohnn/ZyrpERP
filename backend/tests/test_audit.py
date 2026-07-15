@@ -20,6 +20,9 @@ class TestAuditImmutability:
                 'name': 'Safe',
                 'password': 'never-store-me',
                 'nested': {'access_token': 'hidden', 'value': 10},
+                'otp': '123456',
+                'mfa_code': '654321',
+                'recovery_code': 'recovery',
             },
         )
 
@@ -27,6 +30,9 @@ class TestAuditImmutability:
             'name': 'Safe',
             'password': '[REDACTED]',
             'nested': {'access_token': '[REDACTED]', 'value': 10},
+            'otp': '[REDACTED]',
+            'mfa_code': '[REDACTED]',
+            'recovery_code': '[REDACTED]',
         }
 
     def test_persisted_record_cannot_be_saved_again(self):

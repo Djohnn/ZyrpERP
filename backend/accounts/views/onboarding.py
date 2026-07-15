@@ -7,12 +7,14 @@ from rest_framework.views import APIView
 from accounts.serializers import RegistrationSerializer, TokenSerializer
 from accounts.services.onboarding import register_organization
 from accounts.tokens import consume_token
+from accounts.throttles import RegistrationThrottle
 from audit.services import create_audit_record
 
 
 class RegistrationView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [RegistrationThrottle]
 
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)

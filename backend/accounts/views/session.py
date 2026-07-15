@@ -6,11 +6,13 @@ from rest_framework.views import APIView
 
 from accounts.serializers import LoginSerializer
 from audit.services import create_audit_record
+from accounts.throttles import LoginThrottle
 
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [LoginThrottle]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)

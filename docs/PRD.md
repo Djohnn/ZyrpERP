@@ -209,9 +209,151 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 1 — Autenticação, Onboarding e Autorização
 
-**Estado:** A detalhar e aprovar antes de executar.  
-**Objetivo:** permitir criação controlada do tenant, entrada de usuários, recuperação de acesso, memberships e permissões por capability.  
-**Entregável:** primeiro administrador cria sua organização e convida operadores com escopos de empresa e filial.
+**Duração de referência:** 2 semanas
+**Estado:** Planejada e aprovada para execução
+
+**Objetivo:** permitir criação controlada do tenant, entrada de usuários, recuperação de acesso, MFA, memberships e permissões por capability.
+
+**Entregável:** primeiro administrador cria e confirma sua organização, configura MFA por TOTP ou e-mail, autentica-se com sessão segura e convida usuários com papel e escopo de filial.
+
+**Especificação:** [Design da Sprint 1](superpowers/specs/2026-07-14-sprint-1-auth-onboarding-design.md)
+
+#### 1.1 Configuração e fundação de segurança
+
+- [ ] Adicionar dependências versionadas para TOTP, criptografia e rate limiting.
+- [ ] Configurar backend de e-mail local/teste e SMTP por ambiente em produção.
+- [ ] Exigir chave externa para cifrar segredos MFA em produção.
+- [ ] Definir expirações, limites de tentativa e cooldowns por settings.
+- [ ] Documentar novas variáveis em `.env.example` sem valores reais.
+- [ ] Manter cookies seguros, CSRF e rotação de sessão.
+
+**Validação 1.1:** instalação limpa, Django check e deploy check aprovados sem segredos no repositório.
+
+#### 1.2 Tokens e artefatos temporários
+
+- [ ] Criar modelo genérico de token de uso único com finalidade, digest e expiração.
+- [ ] Persistir somente digest de confirmação, recuperação, convite e códigos MFA.
+- [ ] Implementar consumo atômico e uso único.
+- [ ] Implementar expiração e limite de tentativas.
+- [ ] Criar modelo de dispositivo MFA com segredo TOTP cifrado.
+- [ ] Criar códigos de recuperação armazenados somente como hash.
+- [ ] Impedir tokens, códigos e segredos em logs, auditoria e Outbox.
+
+**Validação 1.2:** testes provam expiração, adulteração, replay bloqueado, consumo único e ausência de plaintext persistido.
+
+#### 1.3 Cadastro público e confirmação
+
+- [ ] Criar endpoint público de cadastro do primeiro administrador.
+- [ ] Normalizar e validar e-mail sem permitir enumeração indevida.
+- [ ] Criar usuário, tenant, empresa, filial e membership admin na mesma transação.
+- [ ] Gerar slug seguro e resolver colisões.
+- [ ] Impedir escolha de IDs, tenant ou papel privilegiado pelo payload.
+- [ ] Enviar confirmação de e-mail somente após commit.
+- [ ] Criar endpoint de confirmação com token expirável e de uso único.
+- [ ] Bloquear acesso operacional antes da confirmação.
+- [ ] Auditar cadastro e confirmação sem armazenar token.
+- [ ] Testar rollback integral do onboarding.
+
+**Validação 1.3:** cadastro cria hierarquia completa ou não persiste nada; confirmação válida ativa o fluxo e replay falha.
+
+#### 1.4 Sessão, login e logout
+
+- [ ] Criar login por e-mail e senha usando sessão Django.
+- [ ] Usar resposta uniforme para conta inexistente e senha incorreta.
+- [ ] Rejeitar conta inativa ou e-mail não confirmado.
+- [ ] Criar estado intermediário de sessão antes do MFA.
+- [ ] Rotacionar sessão após autenticação completa.
+- [ ] Criar logout com invalidação server-side.
+- [ ] Criar endpoint `/auth/me/` sanitizado.
+- [ ] Aplicar rate limiting a login e endpoints públicos sensíveis.
+- [ ] Auditar sucessos e bloqueios relevantes sem registrar credenciais.
+
+**Validação 1.4:** testes provam não enumeração, rotação/invalidação de sessão, CSRF e limitação de abuso.
+
+#### 1.5 Política MFA e TOTP
+
+- [ ] Criar política por tenant com TOTP e e-mail permitidos.
+- [ ] Garantir que ao menos um método permaneça permitido.
+- [ ] Permitir alteração somente com capability administrativa.
+- [ ] Impedir remoção do único método verificado de administrador.
+- [ ] Gerar enrollment TOTP e URI `otpauth` exibidos uma vez.
+- [ ] Cifrar segredo TOTP em repouso.
+- [ ] Exigir código válido para ativar TOTP.
+- [ ] Limitar janela temporal e bloquear replay do mesmo timestep.
+- [ ] Exigir MFA de administradores antes de operações tenant-scoped.
+- [ ] Testar IDOR da política MFA.
+
+**Validação 1.5:** TOTP funciona com janela limitada, não permite replay e a política de outro tenant retorna 404.
+
+#### 1.6 MFA por e-mail e recuperação
+
+- [ ] Criar desafio MFA por e-mail com código aleatório.
+- [ ] Expirar desafio em dez minutos.
+- [ ] Limitar a cinco tentativas e aplicar cooldown de reenvio.
+- [ ] Consumir o código uma única vez.
+- [ ] Elevar e rotacionar a sessão após desafio válido.
+- [ ] Gerar códigos de recuperação exibidos uma única vez.
+- [ ] Consumir código de recuperação uma única vez.
+- [ ] Regenerar códigos invalidando o conjunto anterior.
+- [ ] Auditar operações sem armazenar códigos.
+
+**Validação 1.6:** testes cobrem código válido, expirado, tentativa excedida, cooldown, replay e recuperação.
+
+#### 1.7 Recuperação de senha
+
+- [ ] Criar solicitação com resposta indistinguível para e-mail existente/inexistente.
+- [ ] Enviar token somente após commit.
+- [ ] Validar política de senha do Django na redefinição.
+- [ ] Expirar e consumir token uma única vez.
+- [ ] Revogar sessões existentes após redefinição.
+- [ ] Manter MFA obrigatório no próximo login.
+- [ ] Auditar conclusão sem armazenar token ou senha.
+
+**Validação 1.7:** testes provam não enumeração, expiração, adulteração, uso único e revogação de sessões.
+
+#### 1.8 Capabilities, convites e memberships
+
+- [ ] Definir matriz inicial de capabilities para admin, manager e operator.
+- [ ] Centralizar autorização por usuário, tenant, capability e filial.
+- [ ] Proibir comparações dispersas de strings de papel nas views.
+- [ ] Criar convite com e-mail normalizado, papel, filiais, digest e expiração.
+- [ ] Validar que filiais do convite pertencem ao tenant ativo.
+- [ ] Aceitar convite somente com e-mail autenticado correspondente.
+- [ ] Tornar convite de uso único e revogar token anterior no reenvio.
+- [ ] Criar listagem e alteração segura de memberships.
+- [ ] Impedir escalada de papel e remoção do último administrador.
+- [ ] Retornar 404 para convite ou membership de outro tenant.
+- [ ] Auditar convite, reenvio, aceite, papel e escopo.
+
+**Validação 1.8:** matriz, convites e memberships passam testes de capability, filial, IDOR, replay e invariantes administrativas.
+
+#### 1.9 Contratos, qualidade e aceite
+
+- [ ] Documentar endpoints e erros no OpenAPI.
+- [ ] Atualizar READMEs com fluxos e configuração segura.
+- [ ] Ampliar sanitização de auditoria para todos os artefatos de autenticação.
+- [ ] Executar migrations com owner separado do runtime.
+- [ ] Executar Ruff e mypy sem falhas.
+- [ ] Executar suíte completa com PostgreSQL real e cobertura mínima mantida.
+- [ ] Executar testes de isolamento, RLS e IDOR sem regressão.
+- [ ] Executar check de produção simulado.
+- [ ] Executar auditoria de dependências e hook de segredos na CI.
+- [ ] Registrar evidências e riscos no relatório final da sprint.
+- [ ] Atualizar checklist somente após validação correspondente.
+- [ ] Criar commit final `feat: sprint 1 - autenticação e onboarding`.
+- [ ] Enviar para `master` e obter CI remota verde.
+- [ ] Confirmar worktree limpo e sincronizado com `origin/master`.
+
+**Critérios de aceite da Sprint 1:**
+
+- onboarding público é atômico e não permite autoelevação;
+- e-mail confirmado e MFA são obrigatórios para administrador;
+- TOTP e e-mail respeitam a política do tenant;
+- recuperação e convites resistem a enumeração, replay e IDOR;
+- capabilities respeitam tenant, papel e filial;
+- nenhum segredo aparece no banco em plaintext evitável, logs, auditoria, Outbox ou Git;
+- regressões da Sprint 0 permanecem aprovadas;
+- CI remota termina com sucesso.
 
 ### Sprint 2 — Catálogo e Cadastros-base
 

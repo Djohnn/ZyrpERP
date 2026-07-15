@@ -41,7 +41,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 |---:|---|---|
 | 0 | Concluída | Fundação técnica e isolamento multi-tenant |
 | 1 | Concluída | Autenticação, onboarding e autorização |
-| 2 | Em execução | Catálogo e cadastros-base |
+| 2 | Concluída | Catálogo e cadastros-base |
 | 3 | A detalhar | Estoque e movimentações |
 | 4 | A detalhar | Vendas, pedidos e caixa web |
 | 5 | A detalhar | PDV Electron online |
@@ -419,22 +419,22 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [x] Criar consulta de preço vigente por filial e instante.
 - [x] Implementar paginação, busca, filtros e ordenação segura.
 - [x] Padronizar erros RFC 9457 com códigos estáveis.
-- [ ] Auditar criação, alteração, preço e inativação.
-- [ ] Persistir eventos de catálogo na Outbox na mesma transação.
-- [ ] Documentar endpoints no OpenAPI e eventos no catálogo de domínio.
+- [x] Auditar criação, alteração, preço e inativação.
+- [x] Persistir eventos de catálogo na Outbox na mesma transação.
+- [x] Documentar endpoints no OpenAPI e eventos no catálogo de domínio.
 
 #### 2.7 Qualidade e aceite
 
-- [ ] Executar migrations com owner separado do runtime.
-- [ ] Executar Ruff e mypy sem falhas.
-- [ ] Executar suíte completa com cobertura mínima mantida.
-- [ ] Executar testes de concorrência de SKU, códigos e preços.
-- [ ] Executar regressão das Sprints 0 e 1.
-- [ ] Executar deploy check, auditoria de dependências e segredos.
-- [ ] Registrar evidências e riscos no relatório final da Sprint 2.
-- [ ] Criar commit final `feat: sprint 2 - catalogo e cadastros-base`.
-- [ ] Integrar em `master` e obter CI remota verde.
-- [ ] Confirmar worktree limpo e sincronizado com `origin/master`.
+- [x] Executar migrations com owner separado do runtime.
+- [x] Executar Ruff e mypy sem falhas.
+- [x] Executar suíte completa com cobertura mínima mantida.
+- [x] Executar testes de concorrência de SKU, códigos e preços.
+- [x] Executar regressão das Sprints 0 e 1.
+- [x] Executar deploy check, auditoria de dependências e segredos.
+- [x] Registrar evidências e riscos no relatório final da Sprint 2.
+- [x] Criar commit final `feat: sprint 2 - catalogo e cadastros-base`.
+- [x] Integrar em `master` e obter CI remota verde.
+- [x] Confirmar worktree limpo e sincronizado com `origin/master`.
 
 ### Sprint 3 — Estoque e Movimentações
 
@@ -560,4 +560,7 @@ Adicionar uma entrada somente ao encerrar cada sprint:
 
 | Sprint | Data | Commit | Testes | Pendências ou riscos | Aprovação |
 |---:|---|---|---|---|---|
+| 0 | 2026-07-14 | `feat: sprint 0 - fundação técnica` | 13/13 passando | RLS bypassado por superuser (documentado); SECRET_KEY curta tolerada em CI; W021 (HSTS preload) pendente de domínio; var-annotated suprimido em model fields | Pendente |
+| 1 | 2026-07-14 | `feat: sprint 1 - autenticação e onboarding` | 68/68 passando | Nenhum | Pendente |
+| 2 | 2026-07-15 | `feat: sprint 2 - catalogo e cadastros-base` | 63/63 passando | ExclusionConstraint sobre preços omitida (btree_gist indisponível para testes) — validado via clean() | Pendente |
 

@@ -1,13 +1,30 @@
+import contextlib
 from decimal import Decimal
 
 import pytest
-from django.db import connection
+from django.db import connection, transaction
 from django.utils import timezone
 
 from catalog.models import BranchPrice, Product, ProductPrice, Unit
 from catalog.services.pricing import PriceNotAvailable, resolve_effective_price
 from tenancy.context import reset_current_tenant_id, set_current_tenant_id
 from tenancy.models import Branch, Company, Tenant
+
+
+@contextlib.contextmanager
+def pg_tenant_context(tenant):
+    """Context manager que define o tenant no contexto PG (igual ao middleware)."""
+    token = set_current_tenant_id(tenant.id)
+    try:
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT set_config('app.current_tenant_id', %s, true)",
+                    [str(tenant.id)]
+                )
+            yield
+    finally:
+        reset_current_tenant_id(token)
 
 
 def _run_in_tenant(tenant, callback):
@@ -27,16 +44,22 @@ def pricing_tenant():
 
 @pytest.fixture
 def pricing_unit(pricing_tenant):
-    return Unit.all_objects.create(
-        tenant=pricing_tenant, symbol='kg', name='Kg', precision=3,
+    return _run_in_tenant(
+        pricing_tenant,
+        lambda: Unit.all_objects.create(
+            tenant=pricing_tenant, symbol='kg', name='Kg', precision=3,
+        ),
     )
 
 
 @pytest.fixture
 def pricing_product(pricing_tenant, pricing_unit):
-    return Product.all_objects.create(
-        tenant=pricing_tenant, sku='P-PRICE', name='PPrice',
-        base_unit=pricing_unit,
+    return _run_in_tenant(
+        pricing_tenant,
+        lambda: Product.all_objects.create(
+            tenant=pricing_tenant, sku='P-PRICE', name='PPrice',
+            base_unit=pricing_unit,
+        ),
     )
 
 
@@ -71,18 +94,24 @@ def other_branch(pricing_company, pricing_tenant):
 @pytest.fixture
 def tenant_price(pricing_tenant, pricing_product):
     now = timezone.now()
-    return ProductPrice.all_objects.create(
-        tenant=pricing_tenant, product=pricing_product,
-        amount=Decimal('13.90'), valid_from=now, valid_to=None,
+    return _run_in_tenant(
+        pricing_tenant,
+        lambda: ProductPrice.all_objects.create(
+            tenant=pricing_tenant, product=pricing_product,
+            amount=Decimal('13.90'), valid_from=now, valid_to=None,
+        ),
     )
 
 
 @pytest.fixture
 def branch_price(pricing_tenant, pricing_product, pricing_branch):
     now = timezone.now()
-    return BranchPrice.all_objects.create(
-        tenant=pricing_tenant, product=pricing_product, branch=pricing_branch,
-        amount=Decimal('12.90'), valid_from=now, valid_to=None,
+    return _run_in_tenant(
+        pricing_tenant,
+        lambda: BranchPrice.all_objects.create(
+            tenant=pricing_tenant, product=pricing_product, branch=pricing_branch,
+            amount=Decimal('12.90'), valid_from=now, valid_to=None,
+        ),
     )
 
 
@@ -163,10 +192,11 @@ def test_branch_price_tenant_must_match_branch_tenant():
 
     tenant_a = Tenant.objects.create(name='A', slug='bp-a')
     tenant_b = Tenant.objects.create(name='B', slug='bp-b')
-    unit = Unit.all_objects.create(tenant=tenant_b, symbol='kg', name='Kg', precision=3)
-    product = Product.all_objects.create(
-        tenant=tenant_b, sku='BP', name='BP', base_unit=unit,
-    )
+    with pg_tenant_context(tenant_b):
+        unit = Unit.all_objects.create(tenant=tenant_b, symbol='kg', name='Kg', precision=3)
+        product = Product.all_objects.create(
+            tenant=tenant_b, sku='BP', name='BP', base_unit=unit,
+        )
     branch = _run_in_tenant(
         tenant_b,
         lambda: Branch.objects.create(

@@ -24,6 +24,7 @@ from catalog.serializers import (
     ProductUnitSerializer,
     UnitSerializer,
 )
+from catalog.services.events import emit_catalog_event
 from catalog.services.pricing import PriceNotAvailable, resolve_effective_price
 from tenancy.permissions import HasActiveTenant, HasVerifiedMFA
 
@@ -119,9 +120,22 @@ class CatalogViewSetBase(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(tenant=self.request.tenant)
+        instance = serializer.save(tenant=self.request.tenant)
+        emit_catalog_event(
+            action=f'catalog.{instance._meta.model_name}.created',
+            event_type=f'catalog.{instance._meta.model_name}.created',
+            instance=instance,
+            request=self.request,
+        )
+        return instance
 
     def perform_destroy(self, instance):
+        emit_catalog_event(
+            action=f'catalog.{instance._meta.model_name}.deactivated',
+            event_type=f'catalog.{instance._meta.model_name}.deactivated',
+            instance=instance,
+            request=self.request,
+        )
         instance.is_active = False
         instance.save(update_fields=['is_active', 'updated_at'])
 
@@ -146,6 +160,13 @@ class CatalogViewSetBase(viewsets.ModelViewSet):
         instance = serializer.save()
         instance.version += 1
         instance.save(update_fields=['version'])
+        emit_catalog_event(
+            action=f'catalog.{instance._meta.model_name}.updated',
+            event_type=f'catalog.{instance._meta.model_name}.updated',
+            instance=instance,
+            request=self.request,
+        )
+        return instance
 
 
 class UnitViewSet(CatalogViewSetBase):
@@ -197,6 +218,28 @@ class ProductPriceViewSet(CatalogViewSetBase):
     def get_queryset(self):
         return super().get_queryset().filter(product_id=self.kwargs.get('product_pk'))
 
+    def perform_create(self, serializer):
+        instance = serializer.save(tenant=self.request.tenant)
+        emit_catalog_event(
+            action='catalog.price.changed',
+            event_type='catalog.price.changed',
+            instance=instance,
+            request=self.request,
+        )
+        return instance
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        instance.version += 1
+        instance.save(update_fields=['version'])
+        emit_catalog_event(
+            action='catalog.price.changed',
+            event_type='catalog.price.changed',
+            instance=instance,
+            request=self.request,
+        )
+        return instance
+
 
 class BranchPriceViewSet(CatalogViewSetBase):
     queryset = BranchPrice.objects.select_related('product', 'branch')
@@ -208,6 +251,28 @@ class BranchPriceViewSet(CatalogViewSetBase):
 
     def get_queryset(self):
         return super().get_queryset().filter(product_id=self.kwargs.get('product_pk'))
+
+    def perform_create(self, serializer):
+        instance = serializer.save(tenant=self.request.tenant)
+        emit_catalog_event(
+            action='catalog.price.changed',
+            event_type='catalog.price.changed',
+            instance=instance,
+            request=self.request,
+        )
+        return instance
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        instance.version += 1
+        instance.save(update_fields=['version'])
+        emit_catalog_event(
+            action='catalog.price.changed',
+            event_type='catalog.price.changed',
+            instance=instance,
+            request=self.request,
+        )
+        return instance
 
 
 class EffectivePriceView(APIView):

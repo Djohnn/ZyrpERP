@@ -562,5 +562,5 @@ Adicionar uma entrada somente ao encerrar cada sprint:
 |---:|---|---|---|---|---|
 | 0 | 2026-07-14 | `feat: sprint 0 - fundação técnica` | 13/13 passando | RLS bypassado por superuser (documentado); SECRET_KEY curta tolerada em CI; W021 (HSTS preload) pendente de domínio; var-annotated suprimido em model fields | Pendente |
 | 1 | 2026-07-14 | `feat: sprint 1 - autenticação e onboarding` | 68/68 passando | Nenhum | Pendente |
-| 2 | 2026-07-15 | `feat: sprint 2 - catalogo e cadastros-base` | 63/63 passando | ExclusionConstraint sobre preços omitida (btree_gist indisponível para testes) — validado via clean() | Pendente |
+| 2 | 2026-07-15 | `feat: sprint 2 - catalogo e cadastros-base` | 63/63 passando | ExclusionConstraint sobre preços omitida (btree_gist indisponível para testes) — validado via clean() | **Aprovado** |
 

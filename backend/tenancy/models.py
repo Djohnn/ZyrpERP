@@ -24,7 +24,7 @@ class TimeStampedModel(models.Model):
 
 class TenantScopedModel(models.Model):
     tenant = models.ForeignKey(
-        'Tenant', on_delete=models.CASCADE, editable=False,
+        'tenancy.Tenant', on_delete=models.CASCADE, editable=False,
     )
 
     class Meta:

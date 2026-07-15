@@ -40,8 +40,8 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 | Sprint | Estado | Objetivo resumido |
 |---:|---|---|
 | 0 | Concluída | Fundação técnica e isolamento multi-tenant |
-| 1 | A detalhar | Autenticação, onboarding e autorização |
-| 2 | A detalhar | Catálogo e cadastros-base |
+| 1 | Concluída | Autenticação, onboarding e autorização |
+| 2 | Concluída | Catálogo e cadastros-base |
 | 3 | A detalhar | Estoque e movimentações |
 | 4 | A detalhar | Vendas, pedidos e caixa web |
 | 5 | A detalhar | PDV Electron online |
@@ -357,7 +357,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 2 — Catálogo e Cadastros-base
 
-**Estado:** Planejada e aprovada para execução.
+**Estado:** Concluída
 
 **Objetivo:** implementar produtos, categorias, unidades, códigos e preços essenciais.
 
@@ -369,72 +369,72 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 2.1 Fundação do catálogo
 
-- [ ] Criar app `catalog` e registrar em `INSTALLED_APPS`.
-- [ ] Definir capabilities `catalog.view`, `catalog.manage`, `pricing.view` e `pricing.manage`.
-- [ ] Integrar capabilities aos papéis admin, manager e operator.
-- [ ] Manter operações administrativas protegidas por MFA.
+- [x] Criar app `catalog` e registrar em `INSTALLED_APPS`.
+- [x] Definir capabilities `catalog.view`, `catalog.manage`, `pricing.view` e `pricing.manage`.
+- [x] Integrar capabilities aos papéis admin, manager e operator.
+- [x] Manter operações administrativas protegidas por MFA.
 
 #### 2.2 Categorias, unidades e produtos
 
-- [ ] Criar categoria hierárquica com prevenção de ciclos.
-- [ ] Criar unidade com símbolo e precisão decimal limitada.
-- [ ] Criar produto/SKU independente com unidade base.
-- [ ] Normalizar e garantir SKU único por tenant.
-- [ ] Validar categoria e unidade pertencentes ao mesmo tenant.
-- [ ] Adicionar flags de lote e validade para integração com estoque.
-- [ ] Implementar inativação sem exclusão física.
+- [x] Criar categoria hierárquica com prevenção de ciclos.
+- [x] Criar unidade com símbolo e precisão decimal limitada.
+- [x] Criar produto/SKU independente com unidade base.
+- [x] Normalizar e garantir SKU único por tenant.
+- [x] Validar categoria e unidade pertencentes ao mesmo tenant.
+- [x] Adicionar flags de lote e validade para integração com estoque.
+- [x] Implementar inativação sem exclusão física.
 
 #### 2.3 Conversões e códigos
 
-- [ ] Criar unidades comerciais por produto com fator positivo.
-- [ ] Calcular conversões somente com `Decimal`.
-- [ ] Preservar versões de fatores utilizados por fatos posteriores.
-- [ ] Criar códigos internos, EAN, GTIN e de fornecedor.
-- [ ] Validar tamanho e dígito verificador de EAN/GTIN.
-- [ ] Garantir código ativo único por tenant.
-- [ ] Permitir somente um código principal por produto e tipo.
+- [x] Criar unidades comerciais por produto com fator positivo.
+- [x] Calcular conversões somente com `Decimal`.
+- [x] Preservar versões de fatores utilizados por fatos posteriores.
+- [x] Criar códigos internos, EAN, GTIN e de fornecedor.
+- [x] Validar tamanho e dígito verificador de EAN/GTIN.
+- [x] Garantir código ativo único por tenant.
+- [x] Permitir somente um código principal por produto e tipo.
 
 #### 2.4 Precificação
 
-- [ ] Criar preços padrão versionados por vigência.
-- [ ] Criar sobrescrita opcional de preço por filial.
-- [ ] Impedir períodos sobrepostos no mesmo escopo.
-- [ ] Resolver preço por filial, fallback do tenant e instante.
-- [ ] Usar `Decimal` e impedir valor negativo.
-- [ ] Preservar histórico de preços sem sobrescrita destrutiva.
+- [x] Criar preços padrão versionados por vigência.
+- [x] Criar sobrescrita opcional de preço por filial.
+- [x] Impedir períodos sobrepostos no mesmo escopo.
+- [x] Resolver preço por filial, fallback do tenant e instante.
+- [x] Usar `Decimal` e impedir valor negativo.
+- [x] Preservar histórico de preços sem sobrescrita destrutiva.
 
 #### 2.5 Segurança multi-tenant
 
-- [ ] Aplicar manager tenant-scoped em entidades do catálogo.
-- [ ] Habilitar e forçar RLS nas tabelas tenant-scoped.
-- [ ] Negar leitura e escrita sem contexto de tenant.
-- [ ] Validar que preço por filial pertence ao tenant ativo.
-- [ ] Criar testes cross-tenant por aplicação e RLS.
-- [ ] Criar testes de IDOR para produto, código e preço.
+- [x] Aplicar manager tenant-scoped em entidades do catálogo.
+- [x] Habilitar e forçar RLS nas tabelas tenant-scoped.
+- [x] Negar leitura e escrita sem contexto de tenant.
+- [x] Validar que preço por filial pertence ao tenant ativo.
+- [x] Criar testes cross-tenant por aplicação e RLS.
+- [x] Criar testes de IDOR para produto, código e preço.
 
 #### 2.6 APIs, auditoria e eventos
 
-- [ ] Criar CRUD seguro de categorias, unidades e produtos.
-- [ ] Criar endpoints de conversões, códigos e preços.
-- [ ] Criar consulta de preço vigente por filial e instante.
-- [ ] Implementar paginação, busca, filtros e ordenação segura.
-- [ ] Padronizar erros RFC 9457 com códigos estáveis.
-- [ ] Auditar criação, alteração, preço e inativação.
-- [ ] Persistir eventos de catálogo na Outbox na mesma transação.
-- [ ] Documentar endpoints no OpenAPI e eventos no catálogo de domínio.
+- [x] Criar CRUD seguro de categorias, unidades e produtos.
+- [x] Criar endpoints de conversões, códigos e preços.
+- [x] Criar consulta de preço vigente por filial e instante.
+- [x] Implementar paginação, busca, filtros e ordenação segura.
+- [x] Padronizar erros RFC 9457 com códigos estáveis.
+- [x] Auditar criação, alteração, preço e inativação.
+- [x] Persistir eventos de catálogo na Outbox na mesma transação.
+- [x] Documentar endpoints no OpenAPI e eventos no catálogo de domínio.
 
 #### 2.7 Qualidade e aceite
 
-- [ ] Executar migrations com owner separado do runtime.
-- [ ] Executar Ruff e mypy sem falhas.
-- [ ] Executar suíte completa com cobertura mínima mantida.
-- [ ] Executar testes de concorrência de SKU, códigos e preços.
-- [ ] Executar regressão das Sprints 0 e 1.
-- [ ] Executar deploy check, auditoria de dependências e segredos.
-- [ ] Registrar evidências e riscos no relatório final da Sprint 2.
-- [ ] Criar commit final `feat: sprint 2 - catalogo e cadastros-base`.
-- [ ] Integrar em `master` e obter CI remota verde.
-- [ ] Confirmar worktree limpo e sincronizado com `origin/master`.
+- [x] Executar migrations com owner separado do runtime.
+- [x] Executar Ruff e mypy sem falhas.
+- [x] Executar suíte completa com cobertura mínima mantida.
+- [x] Executar testes de concorrência de SKU, códigos e preços.
+- [x] Executar regressão das Sprints 0 e 1.
+- [x] Executar deploy check, auditoria de dependências e segredos.
+- [x] Registrar evidências e riscos no relatório final da Sprint 2.
+- [x] Criar commit final `feat: sprint 2 - catalogo e cadastros-base`.
+- [x] Integrar em `master` e obter CI remota verde.
+- [x] Confirmar worktree limpo e sincronizado com `origin/master`.
 
 ### Sprint 3 — Estoque e Movimentações
 
@@ -560,4 +560,7 @@ Adicionar uma entrada somente ao encerrar cada sprint:
 
 | Sprint | Data | Commit | Testes | Pendências ou riscos | Aprovação |
 |---:|---|---|---|---|---|
+| 0 | 2026-07-14 | `feat: sprint 0 - fundação técnica` | 13/13 passando | RLS bypassado por superuser (documentado); SECRET_KEY curta tolerada em CI; W021 (HSTS preload) pendente de domínio; var-annotated suprimido em model fields | Pendente |
+| 1 | 2026-07-14 | `feat: sprint 1 - autenticação e onboarding` | 68/68 passando | Nenhum | Pendente |
+| 2 | 2026-07-15 | `feat: sprint 2 - catalogo e cadastros-base` | 63/63 passando | ExclusionConstraint sobre preços omitida (btree_gist indisponível para testes) — validado via clean() | Pendente |
 

@@ -396,12 +396,12 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 2.4 Precificação
 
-- [ ] Criar preços padrão versionados por vigência.
-- [ ] Criar sobrescrita opcional de preço por filial.
-- [ ] Impedir períodos sobrepostos no mesmo escopo.
-- [ ] Resolver preço por filial, fallback do tenant e instante.
-- [ ] Usar `Decimal` e impedir valor negativo.
-- [ ] Preservar histórico de preços sem sobrescrita destrutiva.
+- [x] Criar preços padrão versionados por vigência.
+- [x] Criar sobrescrita opcional de preço por filial.
+- [x] Impedir períodos sobrepostos no mesmo escopo.
+- [x] Resolver preço por filial, fallback do tenant e instante.
+- [x] Usar `Decimal` e impedir valor negativo.
+- [x] Preservar histórico de preços sem sobrescrita destrutiva.
 
 #### 2.5 Segurança multi-tenant
 

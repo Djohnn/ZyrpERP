@@ -229,3 +229,142 @@ class ProductCode(TimeStampedModel, TenantScopedModel):
                 raise ValidationError(
                     {'value': f'Invalid {self.code_type.upper()} check digit.'}
                 )
+
+
+class ProductPrice(TimeStampedModel, TenantScopedModel):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='prices',
+    )
+    amount = models.DecimalField(max_digits=18, decimal_places=4)
+    valid_from = models.DateTimeField()
+    valid_to = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    version = models.PositiveIntegerField(default=1)
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['-valid_from']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0),
+                name='productprice_amount_nonneg',
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(valid_to__isnull=True)
+                    | models.Q(valid_to__gt=models.F('valid_from'))
+                ),
+                name='productprice_valid_to_after_valid_from',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.product.sku} {self.amount} [{self.valid_from.date()}]'
+
+    def clean(self):
+        super().clean()
+        if self.amount < 0:
+            raise ValidationError({'amount': 'Price must not be negative.'})
+        if self.valid_to is not None and self.valid_to <= self.valid_from:
+            raise ValidationError({'valid_to': 'valid_to must be after valid_from.'})
+        if self.product_id and self.tenant_id:
+            if self.product.tenant_id != self.tenant_id:
+                raise ValidationError(
+                    {'product': 'Product must belong to the same tenant.'}
+                )
+        if self.is_active and self.product_id and self.tenant_id:
+            overlapping = ProductPrice.all_objects.filter(
+                tenant_id=self.tenant_id,
+                product_id=self.product_id,
+                is_active=True,
+            ).exclude(pk=self.pk)
+            if self.valid_to is not None:
+                overlapping = overlapping.filter(
+                    valid_from__lt=self.valid_to,
+                ).filter(
+                    models.Q(valid_to__isnull=True) | models.Q(valid_to__gt=self.valid_from),
+                )
+            else:
+                overlapping = overlapping.filter(
+                    models.Q(valid_to__isnull=True) | models.Q(valid_to__gt=self.valid_from),
+                )
+            if overlapping.exists():
+                raise ValidationError(
+                    {'valid_from': 'Overlapping price period for this product.'}
+                )
+
+
+class BranchPrice(TimeStampedModel, TenantScopedModel):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='branch_prices',
+    )
+    branch = models.ForeignKey(
+        'tenancy.Branch', on_delete=models.CASCADE, related_name='prices',
+    )
+    amount = models.DecimalField(max_digits=18, decimal_places=4)
+    valid_from = models.DateTimeField()
+    valid_to = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    version = models.PositiveIntegerField(default=1)
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['-valid_from']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0),
+                name='branchprice_amount_nonneg',
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(valid_to__isnull=True)
+                    | models.Q(valid_to__gt=models.F('valid_from'))
+                ),
+                name='branchprice_valid_to_after_valid_from',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.product.sku} @ {self.branch.name} {self.amount}'
+
+    def clean(self):
+        super().clean()
+        if self.amount < 0:
+            raise ValidationError({'amount': 'Price must not be negative.'})
+        if self.valid_to is not None and self.valid_to <= self.valid_from:
+            raise ValidationError({'valid_to': 'valid_to must be after valid_from.'})
+        if self.branch_id and self.tenant_id:
+            if self.branch.tenant_id != self.tenant_id:
+                raise ValidationError(
+                    {'branch': 'Branch must belong to the same tenant.'}
+                )
+        if self.product_id and self.tenant_id:
+            if self.product.tenant_id != self.tenant_id:
+                raise ValidationError(
+                    {'product': 'Product must belong to the same tenant.'}
+                )
+        if self.is_active and self.product_id and self.tenant_id and self.branch_id:
+            overlapping = BranchPrice.all_objects.filter(
+                tenant_id=self.tenant_id,
+                product_id=self.product_id,
+                branch_id=self.branch_id,
+                is_active=True,
+            ).exclude(pk=self.pk)
+            if self.valid_to is not None:
+                overlapping = overlapping.filter(
+                    valid_from__lt=self.valid_to,
+                ).filter(
+                    models.Q(valid_to__isnull=True) | models.Q(valid_to__gt=self.valid_from),
+                )
+            else:
+                overlapping = overlapping.filter(
+                    models.Q(valid_to__isnull=True) | models.Q(valid_to__gt=self.valid_from),
+                )
+            if overlapping.exists():
+                raise ValidationError(
+                    {'valid_from': 'Overlapping price period for this product and branch.'}
+                )

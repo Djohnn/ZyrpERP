@@ -9,6 +9,8 @@ Todas as mudanças relevantes na base documental são registradas aqui.
 - Especificação do catálogo com unidades, conversões, códigos e preços por filial.
 - Especificação do estoque com locais, lotes opcionais e movimentos imutáveis.
 - Decisões de saldo não negativo, idempotência, concorrência e transferências atômicas.
+- Planos executáveis com TDD, arquivos, comandos, gates e commits das Sprints 2 e 3.
+- Checklists operacionais acompanháveis no PRD, com a Sprint 3 bloqueada pelo aceite da Sprint 2.
 
 ## 2026-07-14 — Sprint 1 Authentication and Onboarding
 

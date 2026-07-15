@@ -7,6 +7,8 @@ Registro oficial dos documentos do Zyrp.
 | DESIGN-FOUNDATION-001 | Zyrp Foundation Design | 0.1.1 | Review | `superpowers/specs/2026-07-14-zyrp-foundation-design.md` |
 | DESIGN-CATALOG-002 | Sprint 2 Catalog Design | 1.0.0 | Approved | `superpowers/specs/2026-07-14-sprint-2-catalog-design.md` |
 | DESIGN-INVENTORY-003 | Sprint 3 Inventory Design | 1.0.0 | Approved | `superpowers/specs/2026-07-14-sprint-3-inventory-design.md` |
+| PLAN-CATALOG-002 | Sprint 2 Catalog Implementation Plan | 1.0.0 | Approved | `superpowers/plans/2026-07-14-sprint-2-catalog-implementation-plan.md` |
+| PLAN-INVENTORY-003 | Sprint 3 Inventory Implementation Plan | 1.0.0 | Approved | `superpowers/plans/2026-07-14-sprint-3-inventory-implementation-plan.md` |
 | PLAN-DOCBASE-001 | Documentation Baseline Plan | 0.1.0 | Approved | `superpowers/plans/2026-07-14-documentation-baseline-implementation-plan.md` |
 | PRD-OPS-001 | Operational Sprint Roadmap | 0.1.0 | Review | `PRD.md` |
 | PROMPT-SPRINT-001 | Universal Sprint Execution Prompt | 0.1.0 | Review | `PROMPT_EXECUCAO_SPRINT.md` |

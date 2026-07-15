@@ -357,15 +357,170 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 2 — Catálogo e Cadastros-base
 
-**Estado:** A detalhar e aprovar antes de executar.  
-**Objetivo:** implementar produtos, categorias, unidades, códigos, preços e cadastros comerciais essenciais.  
+**Estado:** Planejada e aprovada para execução.
+
+**Objetivo:** implementar produtos, categorias, unidades, códigos e preços essenciais.
+
 **Entregável:** catálogo isolado por tenant, preparado para casas de rações e expansão futura.
+
+**Especificação:** [Design da Sprint 2](superpowers/specs/2026-07-14-sprint-2-catalog-design.md)
+
+**Plano:** [Plano de implementação da Sprint 2](superpowers/plans/2026-07-14-sprint-2-catalog-implementation-plan.md)
+
+#### 2.1 Fundação do catálogo
+
+- [ ] Criar app `catalog` e registrar em `INSTALLED_APPS`.
+- [ ] Definir capabilities `catalog.view`, `catalog.manage`, `pricing.view` e `pricing.manage`.
+- [ ] Integrar capabilities aos papéis admin, manager e operator.
+- [ ] Manter operações administrativas protegidas por MFA.
+
+#### 2.2 Categorias, unidades e produtos
+
+- [ ] Criar categoria hierárquica com prevenção de ciclos.
+- [ ] Criar unidade com símbolo e precisão decimal limitada.
+- [ ] Criar produto/SKU independente com unidade base.
+- [ ] Normalizar e garantir SKU único por tenant.
+- [ ] Validar categoria e unidade pertencentes ao mesmo tenant.
+- [ ] Adicionar flags de lote e validade para integração com estoque.
+- [ ] Implementar inativação sem exclusão física.
+
+#### 2.3 Conversões e códigos
+
+- [ ] Criar unidades comerciais por produto com fator positivo.
+- [ ] Calcular conversões somente com `Decimal`.
+- [ ] Preservar versões de fatores utilizados por fatos posteriores.
+- [ ] Criar códigos internos, EAN, GTIN e de fornecedor.
+- [ ] Validar tamanho e dígito verificador de EAN/GTIN.
+- [ ] Garantir código ativo único por tenant.
+- [ ] Permitir somente um código principal por produto e tipo.
+
+#### 2.4 Precificação
+
+- [ ] Criar preços padrão versionados por vigência.
+- [ ] Criar sobrescrita opcional de preço por filial.
+- [ ] Impedir períodos sobrepostos no mesmo escopo.
+- [ ] Resolver preço por filial, fallback do tenant e instante.
+- [ ] Usar `Decimal` e impedir valor negativo.
+- [ ] Preservar histórico de preços sem sobrescrita destrutiva.
+
+#### 2.5 Segurança multi-tenant
+
+- [ ] Aplicar manager tenant-scoped em entidades do catálogo.
+- [ ] Habilitar e forçar RLS nas tabelas tenant-scoped.
+- [ ] Negar leitura e escrita sem contexto de tenant.
+- [ ] Validar que preço por filial pertence ao tenant ativo.
+- [ ] Criar testes cross-tenant por aplicação e RLS.
+- [ ] Criar testes de IDOR para produto, código e preço.
+
+#### 2.6 APIs, auditoria e eventos
+
+- [ ] Criar CRUD seguro de categorias, unidades e produtos.
+- [ ] Criar endpoints de conversões, códigos e preços.
+- [ ] Criar consulta de preço vigente por filial e instante.
+- [ ] Implementar paginação, busca, filtros e ordenação segura.
+- [ ] Padronizar erros RFC 9457 com códigos estáveis.
+- [ ] Auditar criação, alteração, preço e inativação.
+- [ ] Persistir eventos de catálogo na Outbox na mesma transação.
+- [ ] Documentar endpoints no OpenAPI e eventos no catálogo de domínio.
+
+#### 2.7 Qualidade e aceite
+
+- [ ] Executar migrations com owner separado do runtime.
+- [ ] Executar Ruff e mypy sem falhas.
+- [ ] Executar suíte completa com cobertura mínima mantida.
+- [ ] Executar testes de concorrência de SKU, códigos e preços.
+- [ ] Executar regressão das Sprints 0 e 1.
+- [ ] Executar deploy check, auditoria de dependências e segredos.
+- [ ] Registrar evidências e riscos no relatório final da Sprint 2.
+- [ ] Criar commit final `feat: sprint 2 - catalogo e cadastros-base`.
+- [ ] Integrar em `master` e obter CI remota verde.
+- [ ] Confirmar worktree limpo e sincronizado com `origin/master`.
 
 ### Sprint 3 — Estoque e Movimentações
 
-**Estado:** A detalhar e aprovar antes de executar.  
-**Objetivo:** controlar saldo por filial por meio de movimentos imutáveis e operações idempotentes.  
+**Estado:** Planejada; execução bloqueada até o aceite da Sprint 2.
+
+**Objetivo:** controlar saldo por filial por meio de movimentos imutáveis e operações idempotentes.
+
 **Entregável:** entradas, saídas, ajustes, transferências e rastreabilidade de estoque.
+
+**Especificação:** [Design da Sprint 3](superpowers/specs/2026-07-14-sprint-3-inventory-design.md)
+
+**Plano:** [Plano de implementação da Sprint 3](superpowers/plans/2026-07-14-sprint-3-inventory-implementation-plan.md)
+
+#### 3.1 Fundação e locais
+
+- [ ] Confirmar aceite e contratos públicos da Sprint 2.
+- [ ] Criar app `inventory` e capabilities de estoque.
+- [ ] Criar múltiplos locais por filial.
+- [ ] Criar exatamente um local principal por filial.
+- [ ] Impedir exclusão de local com histórico.
+
+#### 3.2 Lotes e validade
+
+- [ ] Criar lotes opcionais por produto.
+- [ ] Exigir lote quando configurado no produto.
+- [ ] Exigir validade quando configurada no produto.
+- [ ] Impedir movimentação comum de lote vencido.
+- [ ] Permitir baixa autorizada e auditada de lote vencido.
+
+#### 3.3 Ledger e projeção
+
+- [ ] Criar operação agregadora de estoque.
+- [ ] Criar movimentos imutáveis de entrada e saída.
+- [ ] Preservar unidade, fator e quantidade informados.
+- [ ] Criar saldo projetado por produto, filial, local e lote.
+- [ ] Impedir saldo negativo por serviço e constraint.
+- [ ] Impedir edição ou exclusão de movimento confirmado.
+
+#### 3.4 Concorrência e idempotência
+
+- [ ] Exigir `Idempotency-Key` nas operações de escrita.
+- [ ] Retornar resultado original para replay idêntico.
+- [ ] Rejeitar mesma chave com payload diferente.
+- [ ] Bloquear linhas de saldo em ordem determinística.
+- [ ] Testar saídas concorrentes sem overselling.
+- [ ] Testar saldo final determinístico sob concorrência.
+
+#### 3.5 Operações
+
+- [ ] Implementar saldo inicial.
+- [ ] Implementar entrada e saída manuais.
+- [ ] Implementar ajuste com motivo, capability e MFA.
+- [ ] Implementar transferência atômica entre locais.
+- [ ] Implementar transferência entre filiais autorizadas.
+- [ ] Implementar reversão compensatória única.
+- [ ] Testar rollback integral de transferência.
+
+#### 3.6 Segurança e APIs
+
+- [ ] Aplicar e forçar RLS em todas as tabelas tenant-scoped.
+- [ ] Validar acesso a todas as filiais da operação.
+- [ ] Retornar 404 para recursos fora do tenant ou escopo autorizado.
+- [ ] Criar APIs de locais, lotes, saldos e operações.
+- [ ] Manter movimentos e saldos somente leitura pela API.
+- [ ] Padronizar erros de estoque em RFC 9457.
+- [ ] Criar testes de RLS, IDOR e ausência de contexto.
+
+#### 3.7 Reconciliação, auditoria e eventos
+
+- [ ] Comparar projeção de saldo com soma dos movimentos.
+- [ ] Alertar divergência sem correção silenciosa.
+- [ ] Auditar operação, rejeição, ajuste, transferência e reversão.
+- [ ] Persistir eventos de estoque na Outbox atomicamente.
+- [ ] Documentar endpoints, idempotência e eventos.
+
+#### 3.8 Qualidade e aceite
+
+- [ ] Executar migrations, Ruff e mypy sem falhas.
+- [ ] Executar suíte completa com cobertura mínima mantida.
+- [ ] Repetir testes concorrentes e transacionais para detectar flakiness.
+- [ ] Executar regressão das Sprints 0, 1 e 2.
+- [ ] Executar deploy check, auditoria de dependências e segredos.
+- [ ] Registrar evidências e riscos no relatório final da Sprint 3.
+- [ ] Criar commit final `feat: sprint 3 - estoque e movimentacoes`.
+- [ ] Integrar em `master` e obter CI remota verde.
+- [ ] Confirmar worktree limpo e sincronizado com `origin/master`.
 
 ### Sprint 4 — Vendas, Pedidos e Caixa Web
 

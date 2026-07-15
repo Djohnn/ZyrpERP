@@ -376,13 +376,13 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 2.2 Categorias, unidades e produtos
 
-- [ ] Criar categoria hierárquica com prevenção de ciclos.
-- [ ] Criar unidade com símbolo e precisão decimal limitada.
-- [ ] Criar produto/SKU independente com unidade base.
-- [ ] Normalizar e garantir SKU único por tenant.
-- [ ] Validar categoria e unidade pertencentes ao mesmo tenant.
-- [ ] Adicionar flags de lote e validade para integração com estoque.
-- [ ] Implementar inativação sem exclusão física.
+- [x] Criar categoria hierárquica com prevenção de ciclos.
+- [x] Criar unidade com símbolo e precisão decimal limitada.
+- [x] Criar produto/SKU independente com unidade base.
+- [x] Normalizar e garantir SKU único por tenant.
+- [x] Validar categoria e unidade pertencentes ao mesmo tenant.
+- [x] Adicionar flags de lote e validade para integração com estoque.
+- [x] Implementar inativação sem exclusão física.
 
 #### 2.3 Conversões e códigos
 

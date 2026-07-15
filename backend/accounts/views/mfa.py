@@ -8,20 +8,22 @@ from rest_framework.views import APIView
 from accounts.models import MFADevice
 from accounts.serializers import (
     EmailChallengeSerializer,
-    TOTPConfirmationSerializer,
+    RecoveryVerificationSerializer,
     TenantSelectionSerializer,
+    TOTPConfirmationSerializer,
 )
 from accounts.services.email_delivery import send_mfa_code_email
 from accounts.services.mfa import (
     begin_totp_enrollment,
     confirm_totp,
+    consume_recovery_code,
     issue_email_challenge,
     regenerate_recovery_codes,
     verify_email_challenge,
 )
-from audit.services import create_audit_record
-from tenancy.models import TenantMFAPolicy, TenantMembership
 from accounts.throttles import MFAThrottle
+from audit.services import create_audit_record
+from tenancy.models import TenantMembership, TenantMFAPolicy
 
 User = get_user_model()
 
@@ -82,7 +84,10 @@ class TOTPConfirmationView(APIView):
         device = MFADevice.objects.filter(
             pk=serializer.validated_data['device_id'], user=user, method='totp',
         ).first()
-        if device is None or not confirm_totp(device=device, code=serializer.validated_data['code']):
+        valid = device is not None and confirm_totp(
+            device=device, code=serializer.validated_data['code'],
+        )
+        if not valid:
             return Response({'detail': 'Invalid code.'}, status=400)
         _complete_login(request, user, 'totp', device.tenant_id)
         return Response(status=204)
@@ -103,7 +108,10 @@ class EmailMFASendView(APIView):
         policy, _ = TenantMFAPolicy.objects.get_or_create(tenant=membership.tenant)
         if not policy.allow_email:
             return Response({'detail': 'Email MFA is not allowed.'}, status=403)
-        code, challenge = issue_email_challenge(user=user)
+        try:
+            code, challenge = issue_email_challenge(user=user)
+        except ValueError:
+            return Response({'detail': 'Try again later.'}, status=429)
         request.session[f'mfa_challenge_{challenge.id}'] = str(membership.tenant_id)
         transaction.on_commit(lambda: send_mfa_code_email(user.email, code))
         return Response({'challenge_id': str(challenge.id)}, status=202)
@@ -137,4 +145,32 @@ class RecoveryRegenerateView(APIView):
         device = request.user.mfa_devices.filter(verified_at__isnull=False).first()
         if device is None:
             return Response({'detail': 'MFA device required.'}, status=409)
-        return Response({'codes': regenerate_recovery_codes(device=device)}, status=201)
+        codes = regenerate_recovery_codes(device=device)
+        create_audit_record(
+            actor=request.user, action='auth.recovery_codes_regenerated',
+            resource_type='MFADevice', resource_id=device.id, tenant_id=device.tenant_id,
+            correlation_id=getattr(request, 'correlation_id', ''),
+        )
+        return Response({'codes': codes}, status=201)
+
+
+class RecoveryVerifyView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [MFAThrottle]
+
+    def post(self, request):
+        serializer = RecoveryVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = _pre_mfa_user(request)
+        membership = _membership(user, serializer.validated_data['tenant_id'])
+        if membership is None:
+            return Response({'detail': 'Invalid recovery code.'}, status=400)
+        devices = MFADevice.objects.filter(
+            user=user, tenant=membership.tenant, verified_at__isnull=False,
+        )
+        for device in devices:
+            if consume_recovery_code(device=device, code=serializer.validated_data['code']):
+                _complete_login(request, user, 'recovery', membership.tenant_id)
+                return Response(status=204)
+        return Response({'detail': 'Invalid recovery code.'}, status=400)

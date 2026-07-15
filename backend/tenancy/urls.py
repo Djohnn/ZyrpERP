@@ -4,6 +4,7 @@ from tenancy.views import CompanyDetailView, CompanyListCreateView
 from tenancy.views_access import (
     InvitationAcceptView,
     InvitationListCreateView,
+    InvitationResendView,
     MembershipDetailView,
     MembershipListView,
     MFAPolicyView,
@@ -16,6 +17,7 @@ urlpatterns = [
     path('companies/<uuid:pk>/', CompanyDetailView.as_view(), name='company-detail'),
     path('invitations/', InvitationListCreateView.as_view(), name='invitation-list'),
     path('invitations/accept/', InvitationAcceptView.as_view(), name='invitation-accept'),
+    path('invitations/<uuid:pk>/resend/', InvitationResendView.as_view(), name='invitation-resend'),
     path('memberships/', MembershipListView.as_view(), name='membership-list'),
     path('memberships/<int:pk>/', MembershipDetailView.as_view(), name='membership-detail'),
     path('security/mfa-policy/', MFAPolicyView.as_view(), name='mfa-policy'),

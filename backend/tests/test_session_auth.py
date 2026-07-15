@@ -6,6 +6,24 @@ User = get_user_model()
 
 
 @pytest.mark.django_db
+def test_login_requires_csrf_when_checks_are_enforced():
+    from django.test import Client
+
+    client = Client(enforce_csrf_checks=True)
+    denied = client.post(
+        '/api/v1/auth/login/', {'email': 'nobody@test.local', 'password': 'wrong'},
+        content_type='application/json',
+    )
+    csrf = client.get('/api/v1/auth/csrf/').json()['csrf_token']
+    accepted = client.post(
+        '/api/v1/auth/login/', {'email': 'nobody@test.local', 'password': 'wrong'},
+        content_type='application/json', HTTP_X_CSRFTOKEN=csrf,
+    )
+    assert denied.status_code == 403
+    assert accepted.status_code == 401
+
+
+@pytest.mark.django_db
 def test_login_is_generic_and_requires_verified_email(client):
     user = User.objects.create_user(email='login@test.local', password='valid-password')
     missing = client.post(

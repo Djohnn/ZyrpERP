@@ -3,6 +3,7 @@ import re
 import pytest
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.test import Client
 
 User = get_user_model()
 
@@ -10,6 +11,8 @@ User = get_user_model()
 @pytest.mark.django_db(transaction=True)
 def test_password_recovery_is_generic_and_single_use(client):
     user = User.objects.create_user(email='reset@test.local', password='old-password')
+    prior_session = Client()
+    prior_session.force_login(user)
     existing = client.post(
         '/api/v1/auth/password/forgot/', {'email': user.email},
         content_type='application/json',
@@ -30,3 +33,4 @@ def test_password_recovery_is_generic_and_single_use(client):
     ).status_code == 400
     user.refresh_from_db()
     assert user.check_password('New-strong-password-2026')
+    assert prior_session.get('/api/v1/auth/me/').status_code == 403

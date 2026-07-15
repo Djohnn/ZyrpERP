@@ -24,3 +24,16 @@ python manage.py migrate --check --settings=config.settings.migration
 ```
 
 Os testes usam `POSTGRES_TEST_USER`, que pode criar banco efêmero, mas não é superuser e não possui `BYPASSRLS`. A suíte falha se esse contrato for violado.
+
+## Identity e acesso
+
+- autenticação web por sessão Django e CSRF;
+- cadastro público com confirmação de e-mail;
+- MFA TOTP ou e-mail conforme política do tenant;
+- códigos de recuperação de uso único;
+- recuperação de senha com resposta não enumerável e revogação de sessões;
+- convites, memberships e autorização centralizada por capability;
+- administradores precisam de MFA validado para endpoints tenant-scoped.
+
+Desenvolvimento usa backend de e-mail console e testes usam memória. Produção exige
+SMTP e `MFA_ENCRYPTION_KEY` fornecidos por variável de ambiente.

@@ -6,8 +6,8 @@ from rest_framework.views import APIView
 
 from accounts.serializers import RegistrationSerializer, TokenSerializer
 from accounts.services.onboarding import register_organization
-from accounts.tokens import consume_token
 from accounts.throttles import RegistrationThrottle
+from accounts.tokens import consume_token
 from audit.services import create_audit_record
 
 

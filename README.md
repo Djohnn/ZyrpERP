@@ -4,7 +4,7 @@ SaaS brasileiro de gestão comercial — Core ERP + módulos por segmento.
 
 ## Estado atual
 
-- Fase: Sprint 0 — Fundação Técnica
+- Fase: Sprint 1 — Autenticação, Onboarding e Autorização
 - Ambos os diretórios `backend/`, `frontend/`, `pdv/` e `infra/` iniciados
 - Documentação normativa: `docs/`
 
@@ -60,6 +60,17 @@ Ordem de leitura: Foundation Design → Product Governance → Project Charter
 → Product Vision → Product Strategy → Product Bible → ADRs → PRD Master →
 SAD → DDD → SRS → API Standards → Test Strategy → Security → Operations.
 Todos em `docs/`.
+
+## Autenticação e MFA
+
+O cadastro público cria usuário, tenant, empresa, filial e membership administrativa
+na mesma transação. O administrador confirma o e-mail e configura MFA por TOTP ou
+código de e-mail antes de acessar operações tenant-scoped.
+
+Em produção, configure SMTP e `MFA_ENCRYPTION_KEY` externamente. A chave cifra
+segredos TOTP e nunca deve entrar no Git, em logs, auditoria ou Outbox. Tokens de
+confirmação, recuperação, convite e códigos de recuperação são persistidos somente
+como digest.
 
 ## Regras
 

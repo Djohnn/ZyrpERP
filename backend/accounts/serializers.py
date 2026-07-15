@@ -38,3 +38,7 @@ class TOTPConfirmationSerializer(serializers.Serializer):
 class EmailChallengeSerializer(serializers.Serializer):
     challenge_id = serializers.UUIDField()
     code = serializers.RegexField(r'^\d{6}$')
+
+
+class RecoveryVerificationSerializer(TenantSelectionSerializer):
+    code = serializers.CharField(min_length=8, max_length=32)

@@ -1,7 +1,7 @@
-import pyotp
 import secrets
 from datetime import timedelta
 
+import pyotp
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -42,6 +42,11 @@ def confirm_totp(*, device, code):
 
 
 def issue_email_challenge(*, user):
+    cooldown = timezone.now() - timedelta(seconds=settings.EMAIL_MFA_RESEND_COOLDOWN_SECONDS)
+    if OneTimeToken.objects.filter(
+        user=user, purpose='email_mfa', created_at__gt=cooldown,
+    ).exists():
+        raise ValueError('Email MFA resend cooldown is active.')
     code = f'{secrets.randbelow(1_000_000):06d}'
     challenge = OneTimeToken.objects.create(
         user=user,

@@ -23,6 +23,10 @@ class TestRequestObservability:
         self, client, caplog, user_alpha, tenant_alpha, company_alpha,
     ):
         client.force_login(user_alpha)
+        session = client.session
+        session['mfa_tenant_id'] = str(tenant_alpha.id)
+        session['mfa_method'] = 'totp'
+        session.save()
         caplog.set_level(logging.INFO, logger='config.request')
 
         response = client.get(

@@ -50,3 +50,17 @@ def accept_invitation(*, raw, user):
         for branch in invitation.branches.all():
             membership.user.user_branches.get_or_create(branch=branch)
         return invitation
+
+
+def resend_invitation(invitation):
+    with transaction.atomic():
+        invitation = Invitation.objects.select_for_update().get(pk=invitation.pk)
+        if invitation.accepted_at is not None:
+            raise ValueError('Accepted invitations cannot be resent.')
+        secret = secrets.token_urlsafe(32)
+        invitation.token_digest = digest_value(secret)
+        invitation.expires_at = timezone.now() + timedelta(days=7)
+        invitation.save(update_fields=['token_digest', 'expires_at'])
+        raw = f'{invitation.id}.{secret}'
+        transaction.on_commit(lambda: send_invitation_email(invitation.email, raw))
+    return invitation

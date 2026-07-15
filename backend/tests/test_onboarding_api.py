@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 from django.db import connection
 
+from accounts.services.onboarding import register_organization
 from tenancy.models import Branch, Company, TenantMembership
 
 User = get_user_model()
@@ -78,3 +79,20 @@ def test_duplicate_email_uses_generic_accepted_response(client):
         content_type='application/json',
     )
     assert response.status_code == 202
+
+
+@pytest.mark.django_db(transaction=True)
+def test_onboarding_rolls_back_everything(monkeypatch):
+    def fail_branch(*args, **kwargs):
+        raise RuntimeError('forced rollback')
+
+    monkeypatch.setattr(Branch.objects, 'create', fail_branch)
+    with pytest.raises(RuntimeError, match='forced rollback'):
+        register_organization(
+            email='rollback-onboarding@test.local',
+            password='A-strong-test-password-2026',
+            tenant_name='Rollback Tenant',
+            company_name='Rollback Company',
+            branch_name='Rollback Branch',
+        )
+    assert not User.objects.filter(email='rollback-onboarding@test.local').exists()

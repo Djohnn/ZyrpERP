@@ -24,12 +24,123 @@ paths:
                 required: [status]
                 properties:
                   status: { type: string, const: ok }
+  /auth/register/:
+    post:
+      operationId: registerOrganization
+      summary: Register the first administrator and organization
+      security: []
+      responses:
+        "202": { description: Request accepted without account enumeration }
+        "400": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+  /auth/email/confirm/:
+    post:
+      operationId: confirmEmail
+      summary: Consume a single-use email confirmation token
+      security: []
+      responses:
+        "204": { description: Email confirmed }
+        "400": { $ref: "#/components/responses/Problem" }
+  /auth/login/:
+    post:
+      operationId: login
+      summary: Validate credentials and start a pre-MFA session
+      security: []
+      responses:
+        "202": { description: MFA challenge required }
+        "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+  /auth/mfa/totp/enroll/:
+    post:
+      operationId: enrollTotp
+      summary: Start TOTP enrollment for an active membership
+      security: []
+      responses:
+        "201": { description: Enrollment URI returned once }
+        "404": { $ref: "#/components/responses/Problem" }
+  /auth/mfa/totp/confirm/:
+    post:
+      operationId: confirmTotp
+      summary: Confirm TOTP and complete session authentication
+      security: []
+      responses:
+        "204": { description: Authentication completed }
+        "400": { $ref: "#/components/responses/Problem" }
+  /auth/mfa/email/send/:
+    post:
+      operationId: sendEmailMfa
+      summary: Send a short-lived email MFA challenge
+      security: []
+      responses:
+        "202": { description: Challenge sent }
+        "429": { $ref: "#/components/responses/Problem" }
+  /auth/mfa/challenge/:
+    post:
+      operationId: confirmEmailMfa
+      summary: Consume an email MFA challenge
+      security: []
+      responses:
+        "204": { description: Authentication completed }
+        "400": { $ref: "#/components/responses/Problem" }
+  /auth/password/forgot/:
+    post:
+      operationId: forgotPassword
+      summary: Request password recovery without account enumeration
+      security: []
+      responses:
+        "202": { description: Generic accepted response }
+  /auth/password/reset/:
+    post:
+      operationId: resetPassword
+      summary: Consume recovery token and revoke prior sessions
+      security: []
+      responses:
+        "204": { description: Password changed }
+        "400": { $ref: "#/components/responses/Problem" }
+  /invitations/:
+    get:
+      operationId: listInvitations
+      summary: List invitations in the active tenant
+      responses:
+        "200": { description: Invitation list }
+    post:
+      operationId: createInvitation
+      summary: Invite a user with role and branch scope
+      responses:
+        "201": { description: Invitation created }
+        "403": { $ref: "#/components/responses/Problem" }
+  /memberships/{id}/:
+    patch:
+      operationId: updateMembership
+      summary: Update role, status and branch scope
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Membership updated }
+        "404": { $ref: "#/components/responses/Problem" }
+  /security/mfa-policy/:
+    patch:
+      operationId: updateMfaPolicy
+      summary: Configure MFA methods allowed by the active tenant
+      responses:
+        "200": { description: Policy updated }
+        "403": { $ref: "#/components/responses/Problem" }
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+  responses:
+    Problem:
+      description: RFC 9457 compatible problem response
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
   schemas:
     Money:
       type: object
@@ -56,4 +167,4 @@ components:
         code: { type: string }
         correlation_id: { type: string }
 security:
-  - bearerAuth: []
+  - sessionAuth: []

@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.conf import settings
 from django.db import connection
 from django.http import JsonResponse
@@ -9,19 +11,23 @@ def _check_redis():
         location = cache_settings.get('LOCATION', '')
         if not location or 'LocMem' in cache_settings.get('BACKEND', ''):
             return True
-        from urllib.parse import urlparse
 
         from redis import Redis
+
         parsed = urlparse(location)
-        r = Redis(host=parsed.hostname, port=parsed.port, db=0, socket_connect_timeout=2)
-        return r.ping()
+        redis = Redis(
+            host=parsed.hostname,
+            port=parsed.port,
+            db=0,
+            socket_connect_timeout=2,
+        )
+        return redis.ping()
     except Exception:
         return False
 
 
 def health(request):
     db_ok = False
-    redis_ok = False
 
     try:
         with connection.cursor() as cursor:
@@ -31,7 +37,6 @@ def health(request):
         db_ok = False
 
     redis_ok = _check_redis()
-
     status = 200 if (db_ok and redis_ok) else 503
     return JsonResponse(
         {
@@ -42,4 +47,17 @@ def health(request):
             },
         },
         status=status,
+    )
+
+
+def csrf_failure(request, reason=''):
+    return JsonResponse(
+        {
+            'type': 'about:blank',
+            'title': 'CSRF validation failed',
+            'status': 403,
+            'detail': 'A valid CSRF token is required.',
+        },
+        status=403,
+        content_type='application/problem+json',
     )

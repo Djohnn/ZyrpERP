@@ -7,9 +7,10 @@ from rest_framework.views import APIView
 
 from accounts.serializers import EmailSerializer, PasswordResetSerializer
 from accounts.services.email_delivery import send_password_reset_email
+from accounts.services.sessions import revoke_user_sessions
+from accounts.throttles import PasswordRecoveryThrottle
 from accounts.tokens import consume_token, issue_token
 from audit.services import create_audit_record
-from accounts.throttles import PasswordRecoveryThrottle
 
 User = get_user_model()
 
@@ -45,6 +46,7 @@ class PasswordResetView(APIView):
         validate_password(serializer.validated_data['password'], user=record.user)
         record.user.set_password(serializer.validated_data['password'])
         record.user.save(update_fields=['password'])
+        revoke_user_sessions(record.user_id)
         create_audit_record(
             actor=record.user, action='auth.password_reset', resource_type='User',
             resource_id=record.user_id,

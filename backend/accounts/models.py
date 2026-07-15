@@ -75,6 +75,9 @@ class OneTimeToken(models.Model):
     class Meta:
         indexes = [models.Index(fields=['purpose', 'expires_at'])]
 
+    def __str__(self):
+        return f'{self.purpose} for {self.user_id}'
+
     @property
     def is_usable(self):
         return self.consumed_at is None and self.expires_at > timezone.now()
@@ -99,6 +102,9 @@ class MFADevice(models.Model):
             ),
         ]
 
+    def __str__(self):
+        return f'{self.method} for {self.user_id}'
+
 
 class RecoveryCode(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -106,3 +112,6 @@ class RecoveryCode(models.Model):
     digest = models.CharField(max_length=64)
     consumed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Recovery code for {self.device_id}'

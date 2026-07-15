@@ -6,6 +6,12 @@ from django.db import models
 
 from tenancy.managers import TenantManager
 
+ROLE_CHOICES = [
+    ('admin', 'Admin'),
+    ('manager', 'Manager'),
+    ('operator', 'Operator'),
+]
+
 
 class TimeStampedModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -89,11 +95,7 @@ class TenantMembership(models.Model):
     )
     role = models.CharField(
         max_length=20,
-        choices=[
-            ('admin', 'Admin'),
-            ('manager', 'Manager'),
-            ('operator', 'Operator'),
-        ],
+        choices=ROLE_CHOICES,
         default='operator',
     )
     is_active = models.BooleanField(default=True)
@@ -122,6 +124,9 @@ class TenantMFAPolicy(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'MFA policy for {self.tenant}'
 
 
 class UserBranch(models.Model):
@@ -161,7 +166,7 @@ class Invitation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='invitations')
     email = models.EmailField()
-    role = models.CharField(max_length=20, choices=TenantMembership._meta.get_field('role').choices)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     token_digest = models.CharField(max_length=64)
     expires_at = models.DateTimeField()
     accepted_at = models.DateTimeField(null=True, blank=True)
@@ -173,3 +178,6 @@ class Invitation(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.email} invited to {self.tenant}'

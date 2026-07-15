@@ -40,8 +40,8 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 | Sprint | Estado | Objetivo resumido |
 |---:|---|---|
 | 0 | Concluída | Fundação técnica e isolamento multi-tenant |
-| 1 | A detalhar | Autenticação, onboarding e autorização |
-| 2 | A detalhar | Catálogo e cadastros-base |
+| 1 | Concluída | Autenticação, onboarding e autorização |
+| 2 | Em execução | Catálogo e cadastros-base |
 | 3 | A detalhar | Estoque e movimentações |
 | 4 | A detalhar | Vendas, pedidos e caixa web |
 | 5 | A detalhar | PDV Electron online |
@@ -369,10 +369,10 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 2.1 Fundação do catálogo
 
-- [ ] Criar app `catalog` e registrar em `INSTALLED_APPS`.
-- [ ] Definir capabilities `catalog.view`, `catalog.manage`, `pricing.view` e `pricing.manage`.
-- [ ] Integrar capabilities aos papéis admin, manager e operator.
-- [ ] Manter operações administrativas protegidas por MFA.
+- [x] Criar app `catalog` e registrar em `INSTALLED_APPS`.
+- [x] Definir capabilities `catalog.view`, `catalog.manage`, `pricing.view` e `pricing.manage`.
+- [x] Integrar capabilities aos papéis admin, manager e operator.
+- [x] Manter operações administrativas protegidas por MFA.
 
 #### 2.2 Categorias, unidades e produtos
 

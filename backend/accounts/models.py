@@ -3,6 +3,7 @@ import uuid
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class CustomUserManager(BaseUserManager):
@@ -49,3 +50,58 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class OneTimeToken(models.Model):
+    PURPOSES = [
+        ('email_confirmation', 'Email confirmation'),
+        ('password_reset', 'Password reset'),
+        ('email_mfa', 'Email MFA'),
+        ('invitation', 'Invitation'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='one_time_tokens',
+    )
+    purpose = models.CharField(max_length=32, choices=PURPOSES)
+    digest = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['purpose', 'expires_at'])]
+
+    @property
+    def is_usable(self):
+        return self.consumed_at is None and self.expires_at > timezone.now()
+
+
+class MFADevice(models.Model):
+    TYPES = [('totp', 'TOTP'), ('email', 'Email')]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='mfa_devices')
+    tenant = models.ForeignKey('tenancy.Tenant', on_delete=models.CASCADE)
+    method = models.CharField(max_length=16, choices=TYPES)
+    encrypted_secret = models.TextField(blank=True, default='')
+    verified_at = models.DateTimeField(null=True, blank=True)
+    last_counter = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'tenant', 'method'], name='uniq_user_tenant_mfa_method',
+            ),
+        ]
+
+
+class RecoveryCode(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    device = models.ForeignKey(MFADevice, on_delete=models.CASCADE, related_name='recovery_codes')
+    digest = models.CharField(max_length=64)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

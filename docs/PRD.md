@@ -42,7 +42,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 | 0 | Concluída | Fundação técnica e isolamento multi-tenant |
 | 1 | Concluída | Autenticação, onboarding e autorização |
 | 2 | Concluída | Catálogo e cadastros-base |
-| 3 | A detalhar | Estoque e movimentações |
+| 3 | Em execução | Estoque e movimentações |
 | 4 | A detalhar | Vendas, pedidos e caixa web |
 | 5 | A detalhar | PDV Electron online |
 | 6 | A detalhar | Contingência offline e sincronização |
@@ -450,10 +450,10 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 3.1 Fundação e locais
 
-- [ ] Confirmar aceite e contratos públicos da Sprint 2.
-- [ ] Criar app `inventory` e capabilities de estoque.
-- [ ] Criar múltiplos locais por filial.
-- [ ] Criar exatamente um local principal por filial.
+- [x] Confirmar aceite e contratos públicos da Sprint 2.
+- [x] Criar app `inventory` e capabilities de estoque.
+- [x] Criar múltiplos locais por filial.
+- [x] Criar exatamente um local principal por filial.
 - [ ] Impedir exclusão de local com histórico.
 
 #### 3.2 Lotes e validade

@@ -16,7 +16,7 @@ export function useAuth() {
     if (token) {
       try {
         // Verify token is still valid
-        const response = await fetch('/api/devices/validate/', {
+        const response = await fetch('/api/v1/devices/validate/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_key: localStorage.getItem('api_key') || '' }),

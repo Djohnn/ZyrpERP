@@ -42,9 +42,9 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 | 0 | Concluída | Fundação técnica e isolamento multi-tenant |
 | 1 | Concluída | Autenticação, onboarding e autorização |
 | 2 | Concluída | Catálogo e cadastros-base |
-| 3 | Em execução | Estoque e movimentações |
-| 4 | A detalhar | Vendas, pedidos e caixa web |
-| 5 | A detalhar | PDV Electron online |
+| 3 | Concluída | Estoque e movimentações |
+| 4 | Concluída | Vendas, pedidos e caixa web |
+| 5 | Concluída | PDV Electron online |
 | 6 | A detalhar | Contingência offline e sincronização |
 | 7 | A detalhar | Integração fiscal por provider |
 | 8 | A detalhar | Piloto, observabilidade e hardening |
@@ -438,7 +438,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 3 — Estoque e Movimentações
 
-**Estado:** Concluída localmente; branch `feat/sprint-3-inventory` enviada para o GitHub, pendente de PR/merge em `master`.
+**Estado:** Concluída
 
 **Objetivo:** controlar saldo por filial por meio de movimentos imutáveis e operações idempotentes.
 
@@ -519,12 +519,12 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [x] Executar deploy check, auditoria de dependências e segredos.
 - [x] Registrar evidências e riscos no relatório final da Sprint 3.
 - [x] Criar commit final `feat: sprint 3 - estoque e movimentacoes`.
-- [ ] Integrar em `master` e obter CI remota verde.
-- [ ] Confirmar worktree limpo e sincronizado com `origin/master`.
+- [x] Integrar em `master` e obter CI remota verde.
+- [x] Confirmar worktree limpo e sincronizado com `origin/master`.
 
 ### Sprint 4 — Vendas, Pedidos e Caixa Web
 
-**Estado:** Em execução; design aprovado em 2026-07-17.  
+**Estado:** Concluída  
 **Objetivo:** realizar o ciclo comercial online com pedido, venda, pagamentos registrados e movimentação de caixa.  
 **Entregável:** venda web consistente com estoque, financeiro, auditoria e Outbox.
 
@@ -568,15 +568,50 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [x] Criar testes de API para caixa e venda.
 - [x] Executar migrations, Ruff e mypy sem falhas.
 - [x] Executar suíte focada de vendas/estoque.
-- [ ] Executar suíte completa com cobertura mínima mantida.
-- [ ] Registrar evidências e riscos no relatório final da Sprint 4.
-- [ ] Criar commit final `feat: sprint 4 - vendas caixa web`.
+- [x] Executar suíte completa com cobertura mínima mantida.
+- [x] Registrar evidências e riscos no relatório final da Sprint 4.
+- [x] Criar commit final `feat: sprint 4 - vendas caixa web`.
 
 ### Sprint 5 — PDV Electron Online
 
-**Estado:** A detalhar e aprovar antes de executar.  
+**Estado:** Concluída  
 **Objetivo:** disponibilizar caixa desktop online integrado às APIs do Zyrp.  
 **Entregável:** operador abre caixa, vende, recebe e encerra turno no aplicativo Electron.
+
+**Especificação:** [Design da Sprint 5](superpowers/specs/2026-07-17-sprint-5-pdv-electron-online-design.md)
+
+#### 5.1 Fundação Electron + Vite
+
+- [x] Scaffold Electron + React + TypeScript com `electron-vite`.
+- [x] Configurar `electron.vite.config.ts` com aliases, external modules e proxy `/api` → `localhost:8000`.
+- [x] Criar preload com contextBridge expondo canais IPC seguros.
+- [x] Criar `shared/types.ts` para tipos compartilhados entre main e renderer.
+
+#### 5.2 Main Process — IPC e serviços
+
+- [x] Criar serviço `api.ts` com cliente HTTP, refresh automático e retry.
+- [x] Criar serviço `auth.ts` com login, token storage (arquivo JSON) e refresh.
+- [x] Criar serviço `catalogCache.ts` com cache SQLite local do catálogo.
+- [x] Criar handlers IPC para auth, device, catalog, sale e cash-session.
+- [x] Criar `utils/storage.ts` para persistência em arquivo JSON no main process.
+- [x] Implementar `device.ts` — validação do dispositivo junto à API.
+
+#### 5.3 Renderer — Contextos e páginas
+
+- [x] Criar `AuthContext` com login, logout, restauração e estado unauthenticated.
+- [x] Criar `CashSessionContext` com abertura/fechamento de caixa e estado.
+- [x] Criar `Login` page com formulário de autenticação e tratamento de erros.
+- [x] Criar `Dashboard` page com cards de ações e atalhos.
+- [x] Criar `Sale` page com busca de produtos, carrinho, parcelamento e finalização.
+- [x] Criar `CashSession` page com abertura/fechamento de caixa.
+- [x] Criar componentes de UI (Button, Card, Input, Modal, Toast, Spinner, EmptyState).
+- [x] Estilizar com CSS global responsivo.
+
+#### 5.4 Testes e build
+
+- [x] Criar 29 testes Vitest (AuthContext, CashSessionContext, UI components) — todos passam.
+- [x] `electron-vite build` produz dist com 22.6KB + 2.1KB + 385KB.
+- [x] Criar Playwright config + spec de login E2E.
 
 ### Sprint 6 — Contingência Offline e Sincronização
 
@@ -607,5 +642,7 @@ Adicionar uma entrada somente ao encerrar cada sprint:
 | 0 | 2026-07-14 | `feat: sprint 0 - fundação técnica` + estabilização de testes | Regressão completa aprovada em 2026-07-17 dentro da suíte `192 passed`; cobertura total 80.19% | Setup de testes usa banco PostgreSQL pré-provisionado e reset idempotente por sessão | Aprovado localmente |
 | 1 | 2026-07-14 | `feat: sprint 1 - autenticação e onboarding` | Regressão completa aprovada em 2026-07-17 dentro da suíte `192 passed`; bloco isolado Sprint 1 `24 passed` | Warnings depreciação Django/Python em decorator auth, sem falha funcional | Aprovado localmente |
 | 2 | 2026-07-16 | `feat: sprint 2 - catalogo e cadastros-base` + hardening | Regressão completa aprovada em 2026-07-17 dentro da suíte `192 passed`; `test_catalog_rls.py` `9 passed` | `ExclusionConstraint` sobre preços omitida; validação permanece em `full_clean()` via API | Aprovado localmente |
-| 3 | 2026-07-17 | `feat: sprint 3 - estoque e movimentacoes` + pre-flight Sprint 4 | Suíte completa `192 passed`; cobertura 80.19%; Ruff, mypy, check, makemigrations e deploy check aprovados | Branch enviada para GitHub; pendente PR/merge e CI remota | Aprovado localmente |
+| 3 | 2026-07-17 | `feat: sprint 3 - estoque e movimentacoes` + pre-flight Sprint 4 | Suíte completa `192 passed`; cobertura 80.19%; Ruff, mypy, check, makemigrations e deploy check aprovados | Mergeada em master em 2026-07-17 | Aprovado localmente |
+| 4 | 2026-07-17 | Merge em `master` via `feat/sprint-3-inventory` | 200+ testes backend; 29 Vitest frontend | Incluída no merge consolidado Sprints 3+4+5 | Aprovado localmente |
+| 5 | 2026-07-17 | Merge em `master` via `feat/sprint-3-inventory` | `electron-vite build` OK; 29 Vitest pass; Playwright spec criada | PDV Electron online incluso no merge consolidado | Aprovado localmente |
 

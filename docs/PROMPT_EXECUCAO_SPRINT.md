@@ -233,9 +233,8 @@ Se a sprint não estiver integralmente concluída, diga explicitamente que ela p
 ## Invocação curta recomendada
 
 ```text
-Analise integralmente @docs/PROMPT_EXECUCAO_SPRINT.md e execute somente a Sprint 2 descrita em @docs/PRD.md.
+Analise integralmente @docs/PROMPT_EXECUCAO_SPRINT.md e execute somente a Sprint {NUMERO_DA_SPRINT} descrita em @docs/PRD.md.
 Leia os documentos normativos e o código existente antes de alterar arquivos.
 Implemente uma tarefa por vez, valide-a e só então troque seu marcador de - [ ] para - [x].
 Mantenha tarefas parciais ou bloqueadas abertas, registre evidências e pare ao finalizar a sprint sem iniciar a próxima.
 ```
-

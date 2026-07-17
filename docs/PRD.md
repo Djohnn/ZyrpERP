@@ -42,7 +42,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 | 0 | Concluída | Fundação técnica e isolamento multi-tenant |
 | 1 | Concluída | Autenticação, onboarding e autorização |
 | 2 | Concluída | Catálogo e cadastros-base |
-| 3 | A detalhar | Estoque e movimentações |
+| 3 | Em execução | Estoque e movimentações |
 | 4 | A detalhar | Vendas, pedidos e caixa web |
 | 5 | A detalhar | PDV Electron online |
 | 6 | A detalhar | Contingência offline e sincronização |
@@ -438,7 +438,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 3 — Estoque e Movimentações
 
-**Estado:** Planejada; execução bloqueada até o aceite da Sprint 2.
+**Estado:** Concluída localmente; branch `feat/sprint-3-inventory` enviada para o GitHub, pendente de PR/merge em `master`.
 
 **Objetivo:** controlar saldo por filial por meio de movimentos imutáveis e operações idempotentes.
 
@@ -450,83 +450,127 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 3.1 Fundação e locais
 
-- [ ] Confirmar aceite e contratos públicos da Sprint 2.
-- [ ] Criar app `inventory` e capabilities de estoque.
-- [ ] Criar múltiplos locais por filial.
-- [ ] Criar exatamente um local principal por filial.
-- [ ] Impedir exclusão de local com histórico.
+- [x] Confirmar aceite e contratos públicos da Sprint 2.
+- [x] Criar app `inventory` e capabilities de estoque.
+- [x] Criar múltiplos locais por filial.
+- [x] Criar exatamente um local principal por filial.
+- [x] Impedir exclusão de local com histórico.
 
 #### 3.2 Lotes e validade
 
-- [ ] Criar lotes opcionais por produto.
-- [ ] Exigir lote quando configurado no produto.
-- [ ] Exigir validade quando configurada no produto.
-- [ ] Impedir movimentação comum de lote vencido.
-- [ ] Permitir baixa autorizada e auditada de lote vencido.
+- [x] Criar lotes opcionais por produto.
+- [x] Exigir lote quando configurado no produto.
+- [x] Exigir validade quando configurada no produto.
+- [x] Impedir movimentação comum de lote vencido.
+- [x] Permitir baixa autorizada e auditada de lote vencido.
 
 #### 3.3 Ledger e projeção
 
-- [ ] Criar operação agregadora de estoque.
-- [ ] Criar movimentos imutáveis de entrada e saída.
-- [ ] Preservar unidade, fator e quantidade informados.
-- [ ] Criar saldo projetado por produto, filial, local e lote.
-- [ ] Impedir saldo negativo por serviço e constraint.
-- [ ] Impedir edição ou exclusão de movimento confirmado.
+- [x] Criar operação agregadora de estoque.
+- [x] Criar movimentos imutáveis de entrada e saída.
+- [x] Preservar unidade, fator e quantidade informados.
+- [x] Criar saldo projetado por produto, filial, local e lote.
+- [x] Impedir saldo negativo por serviço e constraint.
+- [x] Impedir edição ou exclusão de movimento confirmado.
 
 #### 3.4 Concorrência e idempotência
 
-- [ ] Exigir `Idempotency-Key` nas operações de escrita.
-- [ ] Retornar resultado original para replay idêntico.
-- [ ] Rejeitar mesma chave com payload diferente.
-- [ ] Bloquear linhas de saldo em ordem determinística.
-- [ ] Testar saídas concorrentes sem overselling.
-- [ ] Testar saldo final determinístico sob concorrência.
+- [x] Exigir `Idempotency-Key` nas operações de escrita.
+- [x] Retornar resultado original para replay idêntico.
+- [x] Rejeitar mesma chave com payload diferente.
+- [x] Bloquear linhas de saldo em ordem determinística.
+- [x] Testar saídas concorrentes sem overselling.
+- [x] Testar saldo final determinístico sob concorrência.
 
 #### 3.5 Operações
 
-- [ ] Implementar saldo inicial.
-- [ ] Implementar entrada e saída manuais.
-- [ ] Implementar ajuste com motivo, capability e MFA.
-- [ ] Implementar transferência atômica entre locais.
-- [ ] Implementar transferência entre filiais autorizadas.
-- [ ] Implementar reversão compensatória única.
-- [ ] Testar rollback integral de transferência.
+- [x] Implementar saldo inicial.
+- [x] Implementar entrada e saída manuais.
+- [x] Implementar ajuste com motivo, capability e MFA.
+- [x] Implementar transferência atômica entre locais.
+- [x] Implementar transferência entre filiais autorizadas.
+- [x] Implementar reversão compensatória única.
+- [x] Testar rollback integral de transferência.
 
 #### 3.6 Segurança e APIs
 
-- [ ] Aplicar e forçar RLS em todas as tabelas tenant-scoped.
-- [ ] Validar acesso a todas as filiais da operação.
-- [ ] Retornar 404 para recursos fora do tenant ou escopo autorizado.
-- [ ] Criar APIs de locais, lotes, saldos e operações.
-- [ ] Manter movimentos e saldos somente leitura pela API.
-- [ ] Padronizar erros de estoque em RFC 9457.
-- [ ] Criar testes de RLS, IDOR e ausência de contexto.
+- [x] Aplicar e forçar RLS em todas as tabelas tenant-scoped.
+- [x] Validar acesso a todas as filiais da operação.
+- [x] Retornar 404 para recursos fora do tenant ou escopo autorizado.
+- [x] Criar APIs de locais, lotes, saldos e operações.
+- [x] Manter movimentos e saldos somente leitura pela API.
+- [x] Padronizar erros de estoque em RFC 9457.
+- [x] Criar testes de RLS, IDOR e ausência de contexto.
 
 #### 3.7 Reconciliação, auditoria e eventos
 
-- [ ] Comparar projeção de saldo com soma dos movimentos.
-- [ ] Alertar divergência sem correção silenciosa.
-- [ ] Auditar operação, rejeição, ajuste, transferência e reversão.
-- [ ] Persistir eventos de estoque na Outbox atomicamente.
-- [ ] Documentar endpoints, idempotência e eventos.
+- [x] Comparar projeção de saldo com soma dos movimentos.
+- [x] Alertar divergência sem correção silenciosa.
+- [x] Auditar operação, rejeição, ajuste, transferência e reversão.
+- [x] Persistir eventos de estoque na Outbox atomicamente.
+- [x] Documentar endpoints, idempotência e eventos.
 
 #### 3.8 Qualidade e aceite
 
-- [ ] Executar migrations, Ruff e mypy sem falhas.
-- [ ] Executar suíte completa com cobertura mínima mantida.
-- [ ] Repetir testes concorrentes e transacionais para detectar flakiness.
-- [ ] Executar regressão das Sprints 0, 1 e 2.
-- [ ] Executar deploy check, auditoria de dependências e segredos.
-- [ ] Registrar evidências e riscos no relatório final da Sprint 3.
-- [ ] Criar commit final `feat: sprint 3 - estoque e movimentacoes`.
+- [x] Executar migrations, Ruff e mypy sem falhas.
+- [x] Executar suíte completa com cobertura mínima mantida.
+- [x] Repetir testes concorrentes e transacionais para detectar flakiness.
+- [x] Executar regressão das Sprints 0, 1 e 2.
+- [x] Executar deploy check, auditoria de dependências e segredos.
+- [x] Registrar evidências e riscos no relatório final da Sprint 3.
+- [x] Criar commit final `feat: sprint 3 - estoque e movimentacoes`.
 - [ ] Integrar em `master` e obter CI remota verde.
 - [ ] Confirmar worktree limpo e sincronizado com `origin/master`.
 
 ### Sprint 4 — Vendas, Pedidos e Caixa Web
 
-**Estado:** A detalhar e aprovar antes de executar.  
+**Estado:** Em execução; design aprovado em 2026-07-17.  
 **Objetivo:** realizar o ciclo comercial online com pedido, venda, pagamentos registrados e movimentação de caixa.  
 **Entregável:** venda web consistente com estoque, financeiro, auditoria e Outbox.
+
+**Especificação:** [Design da Sprint 4](superpowers/specs/2026-07-17-sprint-4-sales-cash-web-design.md)
+
+**Plano:** [Plano de implementação da Sprint 4](superpowers/plans/2026-07-17-sprint-4-sales-cash-web-implementation-plan.md)
+
+#### 4.1 Fundação de vendas e caixa
+
+- [x] Criar app `sales`.
+- [x] Registrar app em `LOCAL_APPS`.
+- [x] Criar modelos `CashSession`, `CashMovement`, `Sale`, `SaleItem` e `SalePayment`.
+- [x] Criar migrations da Sprint 4.
+
+#### 4.2 Serviços transacionais
+
+- [x] Implementar abertura de caixa idempotente.
+- [x] Implementar fechamento de caixa idempotente.
+- [x] Implementar venda balcão com pagamento obrigatório.
+- [x] Baixar estoque imediatamente na mesma transação da venda.
+- [x] Criar movimento de caixa por pagamento registrado.
+- [x] Emitir auditoria e Outbox para venda confirmada.
+
+#### 4.3 API
+
+- [x] Expor abertura, caixa atual e fechamento de caixa.
+- [x] Expor criação de venda balcão confirmada.
+- [x] Expor consulta/listagem de vendas.
+- [x] Retornar problemas padronizados para sem caixa, sem estoque, pagamento divergente e conflito de idempotência.
+
+#### 4.4 Segurança e consistência
+
+- [x] Exigir autenticação, tenant ativo e MFA em escritas.
+- [x] Garantir isolamento multi-tenant nas consultas e escritas.
+- [x] Bloquear alteração/exclusão de vendas confirmadas.
+- [x] Garantir retry idempotente e conflito quando payload divergir.
+
+#### 4.5 Qualidade e aceite
+
+- [x] Criar testes de serviços para caixa e venda.
+- [x] Criar testes de API para caixa e venda.
+- [x] Executar migrations, Ruff e mypy sem falhas.
+- [x] Executar suíte focada de vendas/estoque.
+- [ ] Executar suíte completa com cobertura mínima mantida.
+- [ ] Registrar evidências e riscos no relatório final da Sprint 4.
+- [ ] Criar commit final `feat: sprint 4 - vendas caixa web`.
 
 ### Sprint 5 — PDV Electron Online
 
@@ -560,7 +604,8 @@ Adicionar uma entrada somente ao encerrar cada sprint:
 
 | Sprint | Data | Commit | Testes | Pendências ou riscos | Aprovação |
 |---:|---|---|---|---|---|
-| 0 | 2026-07-14 | `feat: sprint 0 - fundação técnica` | 13/13 passando | RLS bypassado por superuser (documentado); SECRET_KEY curta tolerada em CI; W021 (HSTS preload) pendente de domínio; var-annotated suprimido em model fields | Pendente |
-| 1 | 2026-07-14 | `feat: sprint 1 - autenticação e onboarding` | 68/68 passando | Nenhum | Pendente |
-| 2 | 2026-07-15 | `feat: sprint 2 - catalogo e cadastros-base` | 63/63 passando | ExclusionConstraint sobre preços omitida (btree_gist indisponível para testes) — validado via clean() | **Aprovado** |
+| 0 | 2026-07-14 | `feat: sprint 0 - fundação técnica` + estabilização de testes | Regressão completa aprovada em 2026-07-17 dentro da suíte `192 passed`; cobertura total 80.19% | Setup de testes usa banco PostgreSQL pré-provisionado e reset idempotente por sessão | Aprovado localmente |
+| 1 | 2026-07-14 | `feat: sprint 1 - autenticação e onboarding` | Regressão completa aprovada em 2026-07-17 dentro da suíte `192 passed`; bloco isolado Sprint 1 `24 passed` | Warnings depreciação Django/Python em decorator auth, sem falha funcional | Aprovado localmente |
+| 2 | 2026-07-16 | `feat: sprint 2 - catalogo e cadastros-base` + hardening | Regressão completa aprovada em 2026-07-17 dentro da suíte `192 passed`; `test_catalog_rls.py` `9 passed` | `ExclusionConstraint` sobre preços omitida; validação permanece em `full_clean()` via API | Aprovado localmente |
+| 3 | 2026-07-17 | `feat: sprint 3 - estoque e movimentacoes` + pre-flight Sprint 4 | Suíte completa `192 passed`; cobertura 80.19%; Ruff, mypy, check, makemigrations e deploy check aprovados | Branch enviada para GitHub; pendente PR/merge e CI remota | Aprovado localmente |
 

@@ -1,6 +1,12 @@
 from django.urls import path
 
-from tenancy.views import CompanyDetailView, CompanyListCreateView
+from tenancy.views import (
+    CompanyDetailView,
+    CompanyListCreateView,
+    DeviceRefreshView,
+    DeviceRegisterView,
+    DeviceValidateView,
+)
 from tenancy.views_access import (
     InvitationAcceptView,
     InvitationListCreateView,
@@ -21,4 +27,7 @@ urlpatterns = [
     path('memberships/', MembershipListView.as_view(), name='membership-list'),
     path('memberships/<int:pk>/', MembershipDetailView.as_view(), name='membership-detail'),
     path('security/mfa-policy/', MFAPolicyView.as_view(), name='mfa-policy'),
+    path('devices/', DeviceRegisterView.as_view(), name='device-register'),
+    path('devices/validate/', DeviceValidateView.as_view(), name='device-validate'),
+    path('devices/refresh/', DeviceRefreshView.as_view(), name='device-refresh'),
 ]

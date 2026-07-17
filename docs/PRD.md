@@ -45,7 +45,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 | 3 | Concluída | Estoque e movimentações |
 | 4 | Concluída | Vendas, pedidos e caixa web |
 | 5 | Concluída | PDV Electron online |
-| 6 | A detalhar | Contingência offline e sincronização |
+| 6 | Em execução | Contingência offline e sincronização |
 | 7 | A detalhar | Integração fiscal por provider |
 | 8 | A detalhar | Piloto, observabilidade e hardening |
 
@@ -615,9 +615,48 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 6 — Contingência Offline e Sincronização
 
-**Estado:** A detalhar e aprovar antes de executar.  
+**Estado:** Em execução.  
 **Objetivo:** manter vendas essenciais durante indisponibilidade breve e reconciliar com segurança.  
 **Entregável:** journal SQLite restrito, sincronização idempotente e tratamento auditado de conflitos.
+
+**Especificação:** [Design da Sprint 6](superpowers/specs/2026-07-17-sprint-6-pdv-electron-offline.md)
+
+#### 6.1 Backend — Health check e Sync batch
+
+- [x] Criar endpoint público `GET /api/v1/health/` em `backend/config/urls.py` e `views.py`.
+- [x] Criar endpoint `POST /api/v1/sync/batch/` em `backend/sales/` para receber lote de operações.
+- [x] Validar idempotency_key em cada operação do batch.
+- [x] Retornar resultados individuais por operação (status, data, error).
+
+#### 6.2 Main process — Backoff, Journal e Connectivity
+
+- [x] Criar `pdv/src/main/utils/backoff.ts` com backoff exponencial (5s, 15s, 45s, 120s max).
+- [x] Criar `pdv/src/main/services/operationJournal.ts` — SQLite append-only para operações pendentes.
+- [x] Criar `pdv/src/main/services/connectivityMonitor.ts` — ping periódico, eventos net module.
+- [x] Criar `pdv/src/main/services/conflictResolver.ts` — estratégias por tipo de operação.
+- [x] Criar `pdv/src/main/services/syncEngine.ts` — coordena sync, fila, retry, cleanup.
+
+#### 6.3 Main process — IPC handlers
+
+- [x] Criar `pdv/src/main/ipc/sync.ts` — handlers para sync manual, status, fila pendente.
+- [x] Criar `pdv/src/main/ipc/connectivity.ts` — handler para status de conexão e eventos.
+- [x] Atualizar `pdv/src/main/index.ts` para inicializar novos serviços e IPC handlers.
+- [x] Atualizar `pdv/src/preload/index.ts` com novos canais de sync e connectivity.
+
+#### 6.4 Renderer — Indicadores de conectividade
+
+- [x] Criar componente `SyncIndicator` (ícone verde/amarelo/vermelho + tooltip).
+- [x] Criar componente `SyncStatusBar` (último sync, progresso, botão sincronizar agora).
+- [x] Conectar indicadores ao contexto de sync via hooks IPC.
+- [x] Atualizar `App.tsx` para incluir SyncIndicator e SyncStatusBar.
+
+#### 6.5 Testes e build
+
+- [x] Criar testes unitários Vitest para backoff e conflictResolver (44 testes, 5 suites).
+- [ ] Criar testes de integração para operationJournal, syncEngine e connectivityMonitor (requer Electron runtime).
+- [x] Executar `electron-vite build` sem erros (main 39.44kB, preload 2.59kB, renderer 391.80kB).
+- [x] Executar suíte completa de testes frontend (44 passed).
+- [ ] Executar regressão das Sprints 0-5 (Ruff, mypy, pytest backend — requer PostgreSQL).
 
 ### Sprint 7 — Integração Fiscal
 

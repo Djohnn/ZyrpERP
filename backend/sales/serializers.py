@@ -92,3 +92,17 @@ class CounterSaleSerializer(serializers.Serializer):
     stock_location = serializers.UUIDField()
     items = CounterSaleItemInputSerializer(many=True)
     payments = CounterSalePaymentInputSerializer(many=True)
+
+
+class SyncOperationSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=[
+        'sale:create',
+        'cash-session:open',
+        'cash-session:close',
+    ])
+    payload = serializers.JSONField()
+    idempotency_key = serializers.CharField(max_length=255)
+
+
+class SyncBatchSerializer(serializers.Serializer):
+    operations = SyncOperationSerializer(many=True, min_length=1, max_length=100)

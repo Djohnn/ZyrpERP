@@ -8,9 +8,14 @@ import { setupDeviceHandlers } from './ipc/device';
 import { setupSaleHandlers } from './ipc/sale';
 import { setupCashSessionHandlers } from './ipc/cash-session';
 import { setupCatalogCacheHandlers } from './ipc/catalog-cache';
+import { setupSyncHandlers } from './ipc/sync';
+import { setupConnectivityHandlers } from './ipc/connectivity';
 import { auth } from './services/auth';
 import { api } from './services/api';
 import { catalogCache } from './services/catalogCache';
+import { operationJournal } from './services/operationJournal';
+import { connectivityMonitor } from './services/connectivityMonitor';
+import { syncEngine } from './services/syncEngine';
 import { logger } from './utils/logger';
 
 let mainWindow: Electron.BrowserWindow | null = null;
@@ -55,6 +60,9 @@ function createWindow() {
 app.whenReady().then(async () => {
   // Initialize services
   catalogCache.init();
+  operationJournal.init();
+  connectivityMonitor.init();
+  syncEngine.init();
 
   // Setup IPC handlers
   setupAuthHandlers();
@@ -64,6 +72,8 @@ app.whenReady().then(async () => {
   setupDeviceHandlers();
   setupSaleHandlers();
   setupCashSessionHandlers();
+  setupSyncHandlers();
+  setupConnectivityHandlers();
 
   createWindow();
 

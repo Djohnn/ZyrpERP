@@ -143,3 +143,28 @@ export interface SaleDetail extends Sale {
   items: SaleItem[];
   payments: SalePayment[];
 }
+
+export interface SyncState {
+  status: 'idle' | 'syncing' | 'completed' | 'error';
+  pendingCount: number;
+  lastSyncAt: string | null;
+  error: string | null;
+}
+
+export interface ConnectivityState {
+  isOnline: boolean;
+  lastOnlineAt: string | null;
+  lastOfflineAt: string | null;
+  lastSyncAt: string | null;
+}
+
+export interface JournalEntry {
+  id: number;
+  uuid: string;
+  type: 'sale:create' | 'cash-session:open' | 'cash-session:close';
+  status: 'pending' | 'syncing' | 'synced' | 'conflict' | 'failed';
+  created_at: string;
+  synced_at: string | null;
+  retry_count: number;
+  last_error: string | null;
+}

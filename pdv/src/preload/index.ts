@@ -50,4 +50,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Branch
   listBranches: () => ipcRenderer.invoke('branch:list'),
+
+  // Connectivity
+  getConnectivityStatus: () => ipcRenderer.invoke('connectivity:status'),
+  checkConnectivity: () => ipcRenderer.invoke('connectivity:check'),
+
+  // Sync
+  getSyncStatus: () => ipcRenderer.invoke('sync:status'),
+  startSync: () => ipcRenderer.invoke('sync:start'),
+  getPendingOperations: () => ipcRenderer.invoke('sync:pending'),
+  getJournal: () => ipcRenderer.invoke('sync:journal'),
 });

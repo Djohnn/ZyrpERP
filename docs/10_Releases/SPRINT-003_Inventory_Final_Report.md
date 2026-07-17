@@ -53,16 +53,27 @@ C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_stock_locations.py tests/te
 Resultado: 7 tests collected.
 ```
 
-## Limitação de ambiente
-
-A execução dos testes que usam banco continua travando por timeout no ambiente local, mesmo com coleta funcionando. Isso já havia ocorrido no hardening da Sprint 2.
-
-Comando afetado:
-
 ```text
-C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_stock_locations.py tests/test_stock_lots.py -q -o addopts=''
-Resultado: timeout após 184s.
+C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_inventory_api_hardening.py tests/test_inventory_capabilities.py tests/test_stock_locations.py tests/test_stock_lots.py -q -o addopts=''
+Resultado: 36 passed, 1 warning.
 ```
+
+## Correção do timeout dos testes com banco
+
+A execução dos testes com banco travava durante o setup do pytest-django. A investigação com `faulthandler` mostrou que o processo ficava preso na preparação/conexão do banco de teste.
+
+Causas encontradas:
+
+- `config.settings.test` apontava `NAME` diretamente para `test_zyrp`; o Django tentava criar `test_test_zyrp`.
+- Após corrigir o nome, o banco `test_zyrp` existia mas não estava migrado.
+- Após aplicar migrations com o owner correto, o usuário runtime/teste não tinha DML nas tabelas criadas pelo owner.
+
+Correções aplicadas:
+
+- `config.settings.test` voltou a usar `POSTGRES_DB` como banco base e `TEST.NAME=POSTGRES_TEST_DB`.
+- `OPTIONS.connect_timeout=5` foi adicionado para transformar esperas infinitas em erro explícito.
+- `tests/conftest.py` passou a usar o banco de teste pré-provisionado e garantir grants DML para o usuário runtime/teste.
+- O banco `test_zyrp` foi migrado com `config.settings.migration`.
 
 Também foi confirmado que `manage.py migrate` com o usuário runtime falha por ausência de permissão DDL no schema `public`; a aplicação correta é via `config.settings.migration`, coerente com a estratégia de owner separado.
 
@@ -78,7 +89,7 @@ Ainda não considerar a Sprint 3 encerrada. Permanecem pendentes:
 - aplicar e validar RLS nas tabelas novas;
 - implementar reconciliação de saldo versus movimentos;
 - documentar OpenAPI de estoque e eventos finais;
-- executar suíte com banco em ambiente saudável.
+- ampliar a suíte com movimentos, idempotência, concorrência, transferências e reversões.
 
 ## Status
 

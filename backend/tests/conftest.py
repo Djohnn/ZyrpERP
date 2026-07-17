@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.db import connection
@@ -6,6 +8,43 @@ from tenancy.context import reset_current_tenant_id, set_current_tenant_id
 from tenancy.models import Branch, Company, Tenant, TenantMembership
 
 User = get_user_model()
+
+
+@pytest.fixture(scope='session')
+def django_db_setup():
+    """Use the pre-provisioned PostgreSQL test database.
+
+    The project uses separate runtime and migration owners. Letting
+    pytest-django create/drop the database locally goes through Django's
+    administrative _nodb connection path and hangs in this Windows/Postgres
+    setup. Migrations are applied explicitly with config.settings.migration.
+    """
+    import psycopg
+    from decouple import Config, RepositoryEnv, config
+    from django.conf import settings
+
+    test_name = settings.DATABASES['default'].get('TEST', {}).get('NAME')
+    if test_name:
+        settings.DATABASES['default']['NAME'] = test_name
+    database = settings.DATABASES['default']
+    runtime_user = database['USER']
+    env_path = Path(__file__).resolve().parents[2] / '.env'
+    env_config = Config(RepositoryEnv(str(env_path))) if env_path.exists() else config
+    owner_user = env_config('POSTGRES_USER', default='zyrp')
+    owner_password = env_config('POSTGRES_PASSWORD', default='zyrp')
+    conn = psycopg.connect(
+        dbname=database['NAME'],
+        user=owner_user,
+        password=owner_password,
+        host=database['HOST'],
+        port=database['PORT'],
+        connect_timeout=5,
+    )
+    conn.execute(f'GRANT USAGE ON SCHEMA public TO "{runtime_user}"')
+    conn.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "{runtime_user}"')
+    conn.execute(f'GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "{runtime_user}"')
+    conn.commit()
+    conn.close()
 
 
 def _run_in_tenant(tenant, callback):

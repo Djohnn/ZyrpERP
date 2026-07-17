@@ -1,0 +1,212 @@
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from catalog.models import Product, Unit
+from inventory.models import StockLocation
+from inventory.services import InsufficientStock
+from sales.models import CashSession, Sale
+from sales.permissions import SalesCapabilityPermission
+from sales.serializers import (
+    CashSessionSerializer,
+    CloseCashSessionSerializer,
+    CounterSaleSerializer,
+    OpenCashSessionSerializer,
+    SaleSerializer,
+)
+from sales.services import (
+    CashSessionRequired,
+    DuplicateIdempotencyKey,
+    EmptySale,
+    OpenCashSessionExists,
+    PaymentMismatch,
+    close_cash_session,
+    create_counter_sale,
+    open_cash_session,
+)
+from tenancy.models import Branch
+from tenancy.permissions import HasActiveTenant, HasVerifiedMFA
+
+
+def _problem(detail, code='invalid_sales_operation', status_code=400):
+    return Response(
+        {
+            'type': f'https://zyrp.local/problems/{code}',
+            'title': 'Sales operation rejected',
+            'status': status_code,
+            'detail': str(detail),
+        },
+        status=status_code,
+        content_type='application/problem+json',
+    )
+
+
+def _idempotency_key(request):
+    value = request.headers.get('Idempotency-Key', '').strip()
+    if not value:
+        raise ValueError('Idempotency-Key header is required.')
+    return value
+
+
+def _tenant_get(model, tenant, pk):
+    return model.all_objects.get(tenant=tenant, pk=pk)
+
+
+class CashSessionViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = CashSessionSerializer
+    permission_classes = [
+        IsAuthenticated,
+        HasActiveTenant,
+        SalesCapabilityPermission,
+    ]
+
+    def get_queryset(self):
+        return CashSession.objects.select_related('branch', 'operator').filter(
+            tenant=self.request.tenant,
+        ).prefetch_related('movements')
+
+    def get_permissions(self):
+        permissions = [IsAuthenticated(), HasActiveTenant()]
+        if self.action in {'open', 'close'}:
+            permissions.append(HasVerifiedMFA())
+        permissions.append(SalesCapabilityPermission())
+        return permissions
+
+    def _handle_sales_error(self, exc):
+        if isinstance(exc, ObjectDoesNotExist):
+            return _problem('Resource not found.', 'not_found', status.HTTP_404_NOT_FOUND)
+        if isinstance(exc, DuplicateIdempotencyKey):
+            return _problem(exc, 'idempotency_conflict', status.HTTP_409_CONFLICT)
+        if isinstance(exc, OpenCashSessionExists):
+            return _problem(exc, 'open_cash_session_exists', status.HTTP_409_CONFLICT)
+        if isinstance(exc, ValueError):
+            return _problem(exc)
+        raise exc
+
+    @action(detail=False, methods=['post'])
+    def open(self, request):
+        serializer = OpenCashSessionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            session = open_cash_session(
+                tenant=request.tenant,
+                branch=_tenant_get(Branch, request.tenant, data['branch']),
+                operator=request.user,
+                opening_amount=data['opening_amount'],
+                idempotency_key=_idempotency_key(request),
+            )
+        except Exception as exc:
+            return self._handle_sales_error(exc)
+        return Response(
+            CashSessionSerializer(session, context=self.get_serializer_context()).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=['get'])
+    def current(self, request):
+        branch_id = request.query_params.get('branch')
+        if not branch_id:
+            return _problem('branch query parameter is required.')
+        session = self.get_queryset().filter(
+            branch_id=branch_id,
+            operator=request.user,
+            status='open',
+        ).first()
+        if session is None:
+            return _problem('Open cash session not found.', 'not_found', 404)
+        return Response(
+            CashSessionSerializer(session, context=self.get_serializer_context()).data
+        )
+
+    @action(detail=True, methods=['post'])
+    def close(self, request, pk=None):
+        serializer = CloseCashSessionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            session = close_cash_session(
+                cash_session=self.get_object(),
+                closing_amount=serializer.validated_data['closing_amount'],
+                idempotency_key=_idempotency_key(request),
+            )
+        except Exception as exc:
+            return self._handle_sales_error(exc)
+        return Response(
+            CashSessionSerializer(session, context=self.get_serializer_context()).data
+        )
+
+
+class SaleViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SaleSerializer
+    permission_classes = [
+        IsAuthenticated,
+        HasActiveTenant,
+        SalesCapabilityPermission,
+    ]
+
+    def get_queryset(self):
+        return Sale.objects.select_related(
+            'branch',
+            'cash_session',
+            'operator',
+        ).filter(tenant=self.request.tenant).prefetch_related('items', 'payments')
+
+    def get_permissions(self):
+        permissions = [IsAuthenticated(), HasActiveTenant()]
+        if self.action in {'counter'}:
+            permissions.append(HasVerifiedMFA())
+        permissions.append(SalesCapabilityPermission())
+        return permissions
+
+    def _handle_sales_error(self, exc):
+        if isinstance(exc, ObjectDoesNotExist):
+            return _problem('Resource not found.', 'not_found', status.HTTP_404_NOT_FOUND)
+        if isinstance(exc, DuplicateIdempotencyKey):
+            return _problem(exc, 'idempotency_conflict', status.HTTP_409_CONFLICT)
+        if isinstance(exc, InsufficientStock):
+            return _problem(exc, 'insufficient_stock', status.HTTP_409_CONFLICT)
+        if isinstance(exc, CashSessionRequired):
+            return _problem(exc, 'cash_session_required', status.HTTP_409_CONFLICT)
+        if isinstance(exc, PaymentMismatch):
+            return _problem(exc, 'payment_mismatch')
+        if isinstance(exc, (EmptySale, ValueError)):
+            return _problem(exc)
+        raise exc
+
+    @action(detail=False, methods=['post'])
+    def counter(self, request):
+        serializer = CounterSaleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            branch = _tenant_get(Branch, request.tenant, data['branch'])
+            sale = create_counter_sale(
+                tenant=request.tenant,
+                branch=branch,
+                operator=request.user,
+                stock_location=_tenant_get(
+                    StockLocation,
+                    request.tenant,
+                    data['stock_location'],
+                ),
+                items=[
+                    {
+                        'product': _tenant_get(Product, request.tenant, item['product']),
+                        'unit': _tenant_get(Unit, request.tenant, item['unit']),
+                        'quantity': item['quantity'],
+                        'factor': item['factor'],
+                        'discount_amount': item.get('discount_amount', 0),
+                    }
+                    for item in data['items']
+                ],
+                payments=data['payments'],
+                idempotency_key=_idempotency_key(request),
+            )
+        except Exception as exc:
+            return self._handle_sales_error(exc)
+        return Response(
+            SaleSerializer(sale, context=self.get_serializer_context()).data,
+            status=status.HTTP_201_CREATED,
+        )

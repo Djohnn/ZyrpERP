@@ -524,9 +524,53 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 4 — Vendas, Pedidos e Caixa Web
 
-**Estado:** A detalhar e aprovar antes de executar.  
+**Estado:** Em execução; design aprovado em 2026-07-17.  
 **Objetivo:** realizar o ciclo comercial online com pedido, venda, pagamentos registrados e movimentação de caixa.  
 **Entregável:** venda web consistente com estoque, financeiro, auditoria e Outbox.
+
+**Especificação:** [Design da Sprint 4](superpowers/specs/2026-07-17-sprint-4-sales-cash-web-design.md)
+
+**Plano:** [Plano de implementação da Sprint 4](superpowers/plans/2026-07-17-sprint-4-sales-cash-web-implementation-plan.md)
+
+#### 4.1 Fundação de vendas e caixa
+
+- [x] Criar app `sales`.
+- [x] Registrar app em `LOCAL_APPS`.
+- [x] Criar modelos `CashSession`, `CashMovement`, `Sale`, `SaleItem` e `SalePayment`.
+- [x] Criar migrations da Sprint 4.
+
+#### 4.2 Serviços transacionais
+
+- [x] Implementar abertura de caixa idempotente.
+- [x] Implementar fechamento de caixa idempotente.
+- [x] Implementar venda balcão com pagamento obrigatório.
+- [x] Baixar estoque imediatamente na mesma transação da venda.
+- [x] Criar movimento de caixa por pagamento registrado.
+- [x] Emitir auditoria e Outbox para venda confirmada.
+
+#### 4.3 API
+
+- [x] Expor abertura, caixa atual e fechamento de caixa.
+- [x] Expor criação de venda balcão confirmada.
+- [x] Expor consulta/listagem de vendas.
+- [x] Retornar problemas padronizados para sem caixa, sem estoque, pagamento divergente e conflito de idempotência.
+
+#### 4.4 Segurança e consistência
+
+- [x] Exigir autenticação, tenant ativo e MFA em escritas.
+- [x] Garantir isolamento multi-tenant nas consultas e escritas.
+- [x] Bloquear alteração/exclusão de vendas confirmadas.
+- [x] Garantir retry idempotente e conflito quando payload divergir.
+
+#### 4.5 Qualidade e aceite
+
+- [x] Criar testes de serviços para caixa e venda.
+- [x] Criar testes de API para caixa e venda.
+- [x] Executar migrations, Ruff e mypy sem falhas.
+- [x] Executar suíte focada de vendas/estoque.
+- [ ] Executar suíte completa com cobertura mínima mantida.
+- [ ] Registrar evidências e riscos no relatório final da Sprint 4.
+- [ ] Criar commit final `feat: sprint 4 - vendas caixa web`.
 
 ### Sprint 5 — PDV Electron Online
 

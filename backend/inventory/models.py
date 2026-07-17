@@ -150,6 +150,7 @@ class StockOperation(VersionedInventoryModel):
         related_name='stock_operations',
     )
     idempotency_key = models.CharField(max_length=100, blank=True, default='')
+    payload_hash = models.CharField(max_length=64, blank=True, default='')
     reference = models.CharField(max_length=100, blank=True, default='')
     reason = models.TextField(blank=True, default='')
 
@@ -242,6 +243,18 @@ class StockMovement(VersionedInventoryModel):
             if self.lot.product_id != self.product_id:
                 raise ValidationError({'lot': 'Lot must belong to the same product.'})
 
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            current = StockMovement.all_objects.select_related('operation').get(pk=self.pk)
+            if current.operation.status == 'confirmed':
+                raise ValidationError('Confirmed stock movements are immutable.')
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.operation.status == 'confirmed':
+            raise ValidationError('Confirmed stock movements cannot be deleted.')
+        return super().delete(*args, **kwargs)
+
 
 class StockBalance(VersionedInventoryModel):
     product = models.ForeignKey(
@@ -301,6 +314,24 @@ class StockBalance(VersionedInventoryModel):
                 raise ValidationError({'lot': 'Lot must belong to the same tenant.'})
             if self.lot.product_id != self.product_id:
                 raise ValidationError({'lot': 'Lot must belong to the same product.'})
+
+
+def _location_has_history(location):
+    return (
+        StockMovement.all_objects.filter(location=location).exists()
+        or StockBalance.all_objects.filter(location=location)
+        .exclude(quantity=0, reserved=0)
+        .exists()
+    )
+
+
+def _protected_stock_location_delete(self, *args, **kwargs):
+    if _location_has_history(self):
+        raise ValidationError('Stock location with history cannot be deleted.')
+    return super(StockLocation, self).delete(*args, **kwargs)
+
+
+StockLocation.delete = _protected_stock_location_delete
 
 
 class StockOperationReversal(VersionedInventoryModel):

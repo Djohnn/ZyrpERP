@@ -1,10 +1,12 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Sum
-from rest_framework import status, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from catalog.models import Product, Unit
 from inventory.models import (
     StockBalance,
     StockLocation,
@@ -25,7 +27,78 @@ from inventory.serializers import (
     StockOperationReversalSerializer,
     StockOperationSerializer,
 )
+from inventory.services import (
+    DuplicateIdempotencyKey,
+    ExpiredLotError,
+    InsufficientStock,
+    InvalidLotError,
+    create_adjustment,
+    create_issue,
+    create_receipt,
+    create_transfer,
+    reconcile_stock_balances,
+    reverse_operation,
+)
+from tenancy.models import Branch
 from tenancy.permissions import HasActiveTenant, HasVerifiedMFA
+
+
+class StockWriteSerializer(serializers.Serializer):
+    branch = serializers.UUIDField()
+    product = serializers.UUIDField()
+    location = serializers.UUIDField()
+    quantity = serializers.DecimalField(max_digits=18, decimal_places=6)
+    unit = serializers.UUIDField()
+    factor = serializers.DecimalField(max_digits=18, decimal_places=6, default=1)
+    lot = serializers.UUIDField(required=False, allow_null=True)
+    reason = serializers.CharField(required=False, allow_blank=True, default='')
+    unit_cost = serializers.DecimalField(
+        max_digits=18,
+        decimal_places=6,
+        required=False,
+        allow_null=True,
+    )
+
+
+class StockTransferSerializer(serializers.Serializer):
+    source_branch = serializers.UUIDField()
+    target_branch = serializers.UUIDField()
+    product = serializers.UUIDField()
+    source_location = serializers.UUIDField()
+    target_location = serializers.UUIDField()
+    quantity = serializers.DecimalField(max_digits=18, decimal_places=6)
+    unit = serializers.UUIDField()
+    factor = serializers.DecimalField(max_digits=18, decimal_places=6, default=1)
+    lot = serializers.UUIDField(required=False, allow_null=True)
+    reason = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+class StockReversalRequestSerializer(serializers.Serializer):
+    operation = serializers.UUIDField()
+    reason = serializers.CharField(required=True, allow_blank=False)
+
+
+def _problem(detail, code='invalid_stock_operation', status_code=400):
+    return Response(
+        {
+            'type': f'https://zyrp.local/problems/{code}',
+            'title': 'Stock operation rejected',
+            'status': status_code,
+            'detail': str(detail),
+        },
+        status=status_code,
+    )
+
+
+def _idempotency_key(request):
+    value = request.headers.get('Idempotency-Key', '').strip()
+    if not value:
+        raise ValueError('Idempotency-Key header is required.')
+    return value
+
+
+def _tenant_get(model, tenant, pk):
+    return model.all_objects.get(tenant=tenant, pk=pk)
 
 
 class TenantScopedViewSetMixin:
@@ -130,7 +203,19 @@ class StockOperationViewSet(TenantScopedViewSetMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         permissions = [IsAuthenticated(), HasActiveTenant()]
-        if self.action in {'create', 'update', 'partial_update', 'destroy', 'confirm'}:
+        write_actions = {
+            'create',
+            'update',
+            'partial_update',
+            'destroy',
+            'confirm',
+            'receipt',
+            'issue',
+            'adjustment',
+            'transfer',
+            'reverse',
+        }
+        if self.action in write_actions:
             permissions.append(HasVerifiedMFA())
         permissions.append(InventoryCapabilityPermission())
         return permissions
@@ -150,6 +235,138 @@ class StockOperationViewSet(TenantScopedViewSetMixin, viewsets.ModelViewSet):
         operation.version += 1
         operation.save(update_fields=['status', 'version', 'updated_at'])
         return Response({'detail': 'Operacao confirmada.', 'id': str(operation.id)})
+
+    def _handle_stock_error(self, exc):
+        if isinstance(exc, ObjectDoesNotExist):
+            return _problem('Resource not found.', 'not_found', status.HTTP_404_NOT_FOUND)
+        if isinstance(exc, DuplicateIdempotencyKey):
+            return _problem(exc, 'idempotency_conflict', status.HTTP_409_CONFLICT)
+        if isinstance(exc, InsufficientStock):
+            return _problem(exc, 'insufficient_stock', status.HTTP_409_CONFLICT)
+        if isinstance(exc, (InvalidLotError, ExpiredLotError, ValueError)):
+            return _problem(exc)
+        raise exc
+
+    def _serialize_operation(self, operation):
+        data = StockOperationSerializer(
+            operation,
+            context=self.get_serializer_context(),
+        ).data
+        return Response(data)
+
+    @action(detail=False, methods=['post'])
+    def receipt(self, request):
+        serializer = StockWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            operation = create_receipt(
+                request.tenant,
+                _tenant_get(Branch, request.tenant, data['branch']),
+                _tenant_get(Product, request.tenant, data['product']),
+                _tenant_get(StockLocation, request.tenant, data['location']),
+                data['quantity'],
+                _tenant_get(Unit, request.tenant, data['unit']),
+                data['factor'],
+                lot=_tenant_get(StockLot, request.tenant, data['lot']) if data.get('lot') else None,
+                unit_cost=data.get('unit_cost'),
+                idempotency_key=_idempotency_key(request),
+                actor=request.user,
+                reason=data.get('reason', ''),
+            )
+        except Exception as exc:
+            return self._handle_stock_error(exc)
+        return self._serialize_operation(operation)
+
+    @action(detail=False, methods=['post'])
+    def issue(self, request):
+        serializer = StockWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            operation = create_issue(
+                request.tenant,
+                _tenant_get(Branch, request.tenant, data['branch']),
+                _tenant_get(Product, request.tenant, data['product']),
+                _tenant_get(StockLocation, request.tenant, data['location']),
+                data['quantity'],
+                _tenant_get(Unit, request.tenant, data['unit']),
+                data['factor'],
+                lot=_tenant_get(StockLot, request.tenant, data['lot']) if data.get('lot') else None,
+                unit_cost=data.get('unit_cost'),
+                idempotency_key=_idempotency_key(request),
+                actor=request.user,
+                reason=data.get('reason', ''),
+            )
+        except Exception as exc:
+            return self._handle_stock_error(exc)
+        return self._serialize_operation(operation)
+
+    @action(detail=False, methods=['post'])
+    def adjustment(self, request):
+        serializer = StockWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            operation = create_adjustment(
+                request.tenant,
+                _tenant_get(Branch, request.tenant, data['branch']),
+                _tenant_get(Product, request.tenant, data['product']),
+                _tenant_get(StockLocation, request.tenant, data['location']),
+                data['quantity'],
+                _tenant_get(Unit, request.tenant, data['unit']),
+                data['factor'],
+                lot=_tenant_get(StockLot, request.tenant, data['lot']) if data.get('lot') else None,
+                unit_cost=data.get('unit_cost'),
+                idempotency_key=_idempotency_key(request),
+                actor=request.user,
+                reason=data.get('reason', ''),
+                allow_expired_lot=True,
+            )
+        except Exception as exc:
+            return self._handle_stock_error(exc)
+        return self._serialize_operation(operation)
+
+    @action(detail=False, methods=['post'])
+    def transfer(self, request):
+        serializer = StockTransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            operation = create_transfer(
+                request.tenant,
+                _tenant_get(Branch, request.tenant, data['source_branch']),
+                _tenant_get(Branch, request.tenant, data['target_branch']),
+                _tenant_get(Product, request.tenant, data['product']),
+                _tenant_get(StockLocation, request.tenant, data['source_location']),
+                _tenant_get(StockLocation, request.tenant, data['target_location']),
+                data['quantity'],
+                _tenant_get(Unit, request.tenant, data['unit']),
+                data['factor'],
+                lot=_tenant_get(StockLot, request.tenant, data['lot']) if data.get('lot') else None,
+                idempotency_key=_idempotency_key(request),
+                actor=request.user,
+                reason=data.get('reason', ''),
+            )
+        except Exception as exc:
+            return self._handle_stock_error(exc)
+        return self._serialize_operation(operation)
+
+    @action(detail=False, methods=['post'], url_path='reverse')
+    def reverse(self, request):
+        serializer = StockReversalRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            operation = reverse_operation(
+                _tenant_get(StockOperation, request.tenant, data['operation']),
+                reason=data['reason'],
+                idempotency_key=_idempotency_key(request),
+                actor=request.user,
+            )
+        except Exception as exc:
+            return self._handle_stock_error(exc)
+        return self._serialize_operation(operation)
 
 
 class StockMovementViewSet(viewsets.ReadOnlyModelViewSet):
@@ -216,6 +433,10 @@ class StockBalanceViewSet(viewsets.ReadOnlyModelViewSet):
                 'total_available': total_quantity - total_reserved,
             }
         )
+
+    @action(detail=False, methods=['get'])
+    def reconcile(self, request):
+        return Response(reconcile_stock_balances(request.tenant))
 
 
 class StockOperationReversalViewSet(TenantScopedViewSetMixin, viewsets.ModelViewSet):

@@ -1,4 +1,4 @@
-# Sprint 3 — Estoque e Movimentações — Relatório Parcial de Hardening
+# Sprint 3 — Estoque e Movimentações — Relatório Final
 
 Data da revisão: 2026-07-17
 
@@ -77,22 +77,35 @@ Correções aplicadas:
 
 Também foi confirmado que `manage.py migrate` com o usuário runtime falha por ausência de permissão DDL no schema `public`; a aplicação correta é via `config.settings.migration`, coerente com a estratégia de owner separado.
 
-## Pendências funcionais da Sprint 3
+## Fechamento funcional da Sprint 3
 
-Ainda não considerar a Sprint 3 encerrada. Permanecem pendentes:
+As pendências funcionais foram endereçadas na rodada de fechamento:
 
-- exigir lote/validade conforme flags do produto;
-- bloquear movimentação comum de lote vencido;
-- implementar chave de idempotência obrigatória nas APIs de escrita;
-- rejeitar replay de idempotência com payload diferente;
-- provar concorrência sem overselling;
-- aplicar e validar RLS nas tabelas novas;
-- implementar reconciliação de saldo versus movimentos;
-- documentar OpenAPI de estoque e eventos finais;
-- ampliar a suíte com movimentos, idempotência, concorrência, transferências e reversões.
+- lote obrigatório para produto configurado com `requires_lot`;
+- validade obrigatória para produto configurado com `requires_expiry`;
+- bloqueio de movimentação comum de lote vencido;
+- baixa administrativa autorizada de lote vencido via ajuste auditado;
+- `Idempotency-Key` obrigatório nas APIs de escrita;
+- replay idêntico retorna a operação original;
+- replay com mesmo header e payload diferente retorna conflito `409`;
+- baixa e transferência impedem saldo negativo;
+- transferência é transacional e preserva rollback integral;
+- reversão compensatória é única;
+- RLS habilitado e forçado em tabelas tenant-scoped do inventory;
+- recursos fora do tenant retornam `404`;
+- reconciliação compara saldos projetados versus ledger sem correção silenciosa;
+- endpoints, idempotência e eventos documentados em `docs/05_API/API-Inventory-Sprint-3.md`;
+- suíte ampliada com domínio, API e RLS.
+
+Evidências adicionais:
+
+```text
+C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_inventory_closure.py tests/test_inventory_api_closure.py tests/test_inventory_security_closure.py -q -o addopts=''
+Resultado: 12 passed, 3 warnings.
+```
 
 ## Status
 
-Status técnico: núcleo de inventory carregável, lint limpo, serializers e rotas estabilizados.
+Status técnico: núcleo de inventory carregável, lint limpo, serializers, rotas, serviços idempotentes, RLS e reconciliação estabilizados.
 
-Status da Sprint 3: em execução, não concluída.
+Status da Sprint 3: concluída localmente, pendente apenas de validação remota/CI quando o branch for enviado.

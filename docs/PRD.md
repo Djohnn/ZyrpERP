@@ -454,15 +454,15 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [x] Criar app `inventory` e capabilities de estoque.
 - [x] Criar múltiplos locais por filial.
 - [x] Criar exatamente um local principal por filial.
-- [ ] Impedir exclusão de local com histórico.
+- [x] Impedir exclusão de local com histórico.
 
 #### 3.2 Lotes e validade
 
 - [x] Criar lotes opcionais por produto.
-- [ ] Exigir lote quando configurado no produto.
-- [ ] Exigir validade quando configurada no produto.
-- [ ] Impedir movimentação comum de lote vencido.
-- [ ] Permitir baixa autorizada e auditada de lote vencido.
+- [x] Exigir lote quando configurado no produto.
+- [x] Exigir validade quando configurada no produto.
+- [x] Impedir movimentação comum de lote vencido.
+- [x] Permitir baixa autorizada e auditada de lote vencido.
 
 #### 3.3 Ledger e projeção
 
@@ -470,45 +470,45 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [x] Criar movimentos imutáveis de entrada e saída.
 - [x] Preservar unidade, fator e quantidade informados.
 - [x] Criar saldo projetado por produto, filial, local e lote.
-- [ ] Impedir saldo negativo por serviço e constraint.
-- [ ] Impedir edição ou exclusão de movimento confirmado.
+- [x] Impedir saldo negativo por serviço e constraint.
+- [x] Impedir edição ou exclusão de movimento confirmado.
 
 #### 3.4 Concorrência e idempotência
 
-- [ ] Exigir `Idempotency-Key` nas operações de escrita.
-- [ ] Retornar resultado original para replay idêntico.
-- [ ] Rejeitar mesma chave com payload diferente.
-- [ ] Bloquear linhas de saldo em ordem determinística.
-- [ ] Testar saídas concorrentes sem overselling.
-- [ ] Testar saldo final determinístico sob concorrência.
+- [x] Exigir `Idempotency-Key` nas operações de escrita.
+- [x] Retornar resultado original para replay idêntico.
+- [x] Rejeitar mesma chave com payload diferente.
+- [x] Bloquear linhas de saldo em ordem determinística.
+- [x] Testar saídas concorrentes sem overselling.
+- [x] Testar saldo final determinístico sob concorrência.
 
 #### 3.5 Operações
 
-- [ ] Implementar saldo inicial.
-- [ ] Implementar entrada e saída manuais.
-- [ ] Implementar ajuste com motivo, capability e MFA.
-- [ ] Implementar transferência atômica entre locais.
-- [ ] Implementar transferência entre filiais autorizadas.
-- [ ] Implementar reversão compensatória única.
-- [ ] Testar rollback integral de transferência.
+- [x] Implementar saldo inicial.
+- [x] Implementar entrada e saída manuais.
+- [x] Implementar ajuste com motivo, capability e MFA.
+- [x] Implementar transferência atômica entre locais.
+- [x] Implementar transferência entre filiais autorizadas.
+- [x] Implementar reversão compensatória única.
+- [x] Testar rollback integral de transferência.
 
 #### 3.6 Segurança e APIs
 
-- [ ] Aplicar e forçar RLS em todas as tabelas tenant-scoped.
-- [ ] Validar acesso a todas as filiais da operação.
-- [ ] Retornar 404 para recursos fora do tenant ou escopo autorizado.
+- [x] Aplicar e forçar RLS em todas as tabelas tenant-scoped.
+- [x] Validar acesso a todas as filiais da operação.
+- [x] Retornar 404 para recursos fora do tenant ou escopo autorizado.
 - [x] Criar APIs de locais, lotes, saldos e operações.
 - [x] Manter movimentos e saldos somente leitura pela API.
-- [ ] Padronizar erros de estoque em RFC 9457.
-- [ ] Criar testes de RLS, IDOR e ausência de contexto.
+- [x] Padronizar erros de estoque em RFC 9457.
+- [x] Criar testes de RLS, IDOR e ausência de contexto.
 
 #### 3.7 Reconciliação, auditoria e eventos
 
-- [ ] Comparar projeção de saldo com soma dos movimentos.
-- [ ] Alertar divergência sem correção silenciosa.
-- [ ] Auditar operação, rejeição, ajuste, transferência e reversão.
-- [ ] Persistir eventos de estoque na Outbox atomicamente.
-- [ ] Documentar endpoints, idempotência e eventos.
+- [x] Comparar projeção de saldo com soma dos movimentos.
+- [x] Alertar divergência sem correção silenciosa.
+- [x] Auditar operação, rejeição, ajuste, transferência e reversão.
+- [x] Persistir eventos de estoque na Outbox atomicamente.
+- [x] Documentar endpoints, idempotência e eventos.
 
 #### 3.8 Qualidade e aceite
 

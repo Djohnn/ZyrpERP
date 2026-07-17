@@ -112,7 +112,7 @@ class CatalogViewSetBase(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = self.queryset.model.objects.filter(tenant=self.request.tenant)
         search = self.request.query_params.get('search')
-        if search and hasattr(self.model, 'name'):
+        if search and hasattr(qs.model, 'name'):
             qs = qs.filter(name__icontains=search)
         is_active = self.request.query_params.get('is_active')
         if is_active is not None:
@@ -198,6 +198,19 @@ class ProductUnitViewSet(CatalogViewSetBase):
     def get_queryset(self):
         return super().get_queryset().filter(product_id=self.kwargs.get('product_pk'))
 
+    def perform_create(self, serializer):
+        product = get_object_or_404(
+            Product, id=self.kwargs.get('product_pk'), tenant=self.request.tenant,
+        )
+        instance = serializer.save(tenant=self.request.tenant, product=product)
+        emit_catalog_event(
+            action='catalog.productunit.created',
+            event_type='catalog.productunit.created',
+            instance=instance,
+            request=self.request,
+        )
+        return instance
+
 
 class ProductCodeViewSet(CatalogViewSetBase):
     queryset = ProductCode.objects.select_related('product')
@@ -205,6 +218,19 @@ class ProductCodeViewSet(CatalogViewSetBase):
 
     def get_queryset(self):
         return super().get_queryset().filter(product_id=self.kwargs.get('product_pk'))
+
+    def perform_create(self, serializer):
+        product = get_object_or_404(
+            Product, id=self.kwargs.get('product_pk'), tenant=self.request.tenant,
+        )
+        instance = serializer.save(tenant=self.request.tenant, product=product)
+        emit_catalog_event(
+            action='catalog.productcode.created',
+            event_type='catalog.productcode.created',
+            instance=instance,
+            request=self.request,
+        )
+        return instance
 
 
 class ProductPriceViewSet(CatalogViewSetBase):
@@ -219,7 +245,10 @@ class ProductPriceViewSet(CatalogViewSetBase):
         return super().get_queryset().filter(product_id=self.kwargs.get('product_pk'))
 
     def perform_create(self, serializer):
-        instance = serializer.save(tenant=self.request.tenant)
+        product = get_object_or_404(
+            Product, id=self.kwargs.get('product_pk'), tenant=self.request.tenant,
+        )
+        instance = serializer.save(tenant=self.request.tenant, product=product)
         emit_catalog_event(
             action='catalog.price.changed',
             event_type='catalog.price.changed',
@@ -253,7 +282,10 @@ class BranchPriceViewSet(CatalogViewSetBase):
         return super().get_queryset().filter(product_id=self.kwargs.get('product_pk'))
 
     def perform_create(self, serializer):
-        instance = serializer.save(tenant=self.request.tenant)
+        product = get_object_or_404(
+            Product, id=self.kwargs.get('product_pk'), tenant=self.request.tenant,
+        )
+        instance = serializer.save(tenant=self.request.tenant, product=product)
         emit_catalog_event(
             action='catalog.price.changed',
             event_type='catalog.price.changed',

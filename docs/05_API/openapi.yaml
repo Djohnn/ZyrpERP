@@ -129,7 +129,223 @@ paths:
       responses:
         "200": { description: Policy updated }
         "403": { $ref: "#/components/responses/Problem" }
+  /categories/:
+    get:
+      operationId: listCategories
+      summary: List catalog categories for the active tenant
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/IsActive"
+      responses:
+        "200": { description: Category list }
+        "403": { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createCategory
+      summary: Create a catalog category
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Category" }
+      responses:
+        "201": { description: Category created }
+        "400": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+  /units/:
+    get:
+      operationId: listUnits
+      summary: List catalog units for the active tenant
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/IsActive"
+      responses:
+        "200": { description: Unit list }
+        "403": { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createUnit
+      summary: Create a catalog unit
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Unit" }
+      responses:
+        "201": { description: Unit created }
+        "400": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+  /products/:
+    get:
+      operationId: listProducts
+      summary: List products for the active tenant
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/IsActive"
+        - in: query
+          name: category
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Product list }
+        "403": { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createProduct
+      summary: Create a product
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Product" }
+      responses:
+        "201": { description: Product created }
+        "400": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+  /products/{product_id}/effective-price/:
+    get:
+      operationId: getProductEffectivePrice
+      summary: Resolve the effective product price for a branch and instant
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/ProductId"
+        - in: query
+          name: branch_id
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: at
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Effective price
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EffectivePrice" }
+        "400": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+  /products/{product_pk}/codes/:
+    get:
+      operationId: listProductCodes
+      summary: List product codes
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/ProductPk"
+      responses:
+        "200": { description: Product code list }
+    post:
+      operationId: createProductCode
+      summary: Create a code for the URL product
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/ProductPk"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductCode" }
+      responses:
+        "201": { description: Product code created }
+        "400": { $ref: "#/components/responses/Problem" }
+  /products/{product_pk}/units/:
+    get:
+      operationId: listProductUnits
+      summary: List commercial units for a product
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/ProductPk"
+      responses:
+        "200": { description: Product unit list }
+    post:
+      operationId: createProductUnit
+      summary: Create a commercial unit for the URL product
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/ProductPk"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductUnit" }
+      responses:
+        "201": { description: Product unit created }
+        "400": { $ref: "#/components/responses/Problem" }
+  /products/{product_pk}/prices/:
+    get:
+      operationId: listProductPrices
+      summary: List tenant-level prices for a product
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/ProductPk"
+      responses:
+        "200": { description: Product price list }
+    post:
+      operationId: createProductPrice
+      summary: Create a tenant-level price for the URL product
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/ProductPk"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductPrice" }
+      responses:
+        "201": { description: Product price created }
+        "400": { $ref: "#/components/responses/Problem" }
+  /products/{product_pk}/branch-prices/:
+    get:
+      operationId: listBranchPrices
+      summary: List branch price overrides for a product
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/ProductPk"
+      responses:
+        "200": { description: Branch price list }
+    post:
+      operationId: createBranchPrice
+      summary: Create a branch price override for the URL product
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - $ref: "#/components/parameters/ProductPk"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BranchPrice" }
+      responses:
+        "201": { description: Branch price created }
+        "400": { $ref: "#/components/responses/Problem" }
 components:
+  parameters:
+    TenantHeader:
+      in: header
+      name: X-Tenant-ID
+      required: true
+      schema: { type: string, format: uuid }
+    Search:
+      in: query
+      name: search
+      schema: { type: string, maxLength: 120 }
+    IsActive:
+      in: query
+      name: is_active
+      schema: { type: boolean }
+    ProductId:
+      in: path
+      name: product_id
+      required: true
+      schema: { type: string, format: uuid }
+    ProductPk:
+      in: path
+      name: product_pk
+      required: true
+      schema: { type: string, format: uuid }
   securitySchemes:
     sessionAuth:
       type: apiKey
@@ -155,6 +371,82 @@ components:
         tenant_id: { type: string, format: uuid }
         company_id: { type: [string, "null"], format: uuid }
         branch_id: { type: [string, "null"], format: uuid }
+    Category:
+      type: object
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        name: { type: string, maxLength: 120 }
+        code: { type: string, maxLength: 40 }
+        parent: { type: [string, "null"], format: uuid }
+        is_active: { type: boolean }
+        version: { type: integer, readOnly: true }
+    Unit:
+      type: object
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        symbol: { type: string, maxLength: 12 }
+        name: { type: string, maxLength: 80 }
+        precision: { type: integer, minimum: 0, maximum: 6 }
+        is_active: { type: boolean }
+        version: { type: integer, readOnly: true }
+    Product:
+      type: object
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        sku: { type: string, maxLength: 64 }
+        name: { type: string, maxLength: 200 }
+        description: { type: string }
+        category: { type: [string, "null"], format: uuid }
+        base_unit: { type: string, format: uuid }
+        requires_lot: { type: boolean }
+        requires_expiry: { type: boolean }
+        is_active: { type: boolean }
+        version: { type: integer, readOnly: true }
+    ProductCode:
+      type: object
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        product: { type: string, format: uuid, readOnly: true }
+        code_type: { type: string, enum: [internal, ean, gtin, supplier] }
+        value: { type: string, maxLength: 64 }
+        is_principal: { type: boolean }
+        is_active: { type: boolean }
+        version: { type: integer, readOnly: true }
+    ProductUnit:
+      type: object
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        product: { type: string, format: uuid, readOnly: true }
+        unit: { type: string, format: uuid }
+        factor: { type: string, pattern: "^[0-9]+(\\.[0-9]{1,6})?$" }
+        is_active: { type: boolean }
+        version: { type: integer, readOnly: true }
+    ProductPrice:
+      type: object
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        product: { type: string, format: uuid, readOnly: true }
+        amount: { type: string, pattern: "^[0-9]+(\\.[0-9]{1,4})?$" }
+        valid_from: { type: string, format: date-time }
+        valid_to: { type: [string, "null"], format: date-time }
+        is_active: { type: boolean }
+        version: { type: integer, readOnly: true }
+    BranchPrice:
+      allOf:
+        - $ref: "#/components/schemas/ProductPrice"
+        - type: object
+          properties:
+            branch: { type: string, format: uuid }
+    EffectivePrice:
+      type: object
+      required: [id, amount, currency, source]
+      properties:
+        id: { type: string, format: uuid }
+        amount: { type: string, pattern: "^[0-9]+(\\.[0-9]{1,4})?$" }
+        currency: { type: string, const: BRL }
+        source: { type: string, enum: [tenant, branch] }
+        valid_from: { type: [string, "null"], format: date-time }
+        valid_to: { type: [string, "null"], format: date-time }
     Problem:
       type: object
       required: [type, title, status, code, correlation_id]

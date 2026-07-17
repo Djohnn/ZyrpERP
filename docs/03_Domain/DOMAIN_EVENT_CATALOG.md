@@ -12,6 +12,12 @@ Todo evento contém `event_id`, `event_type`, `event_version`, `occurred_at`, `t
 | `FiscalDocumentAuthorized` | 1 | Fiscal | Sales, PDV, Analytics, Audit | document, access key, protocol, artifact refs |
 | `FiscalDocumentRejected` | 1 | Fiscal | Sales, PDV, Audit | document, code, reason, correctable |
 | `PDVOperationSynchronized` | 1 | PDV | Sales, Cash, Audit | device, local operation, server reference |
+| `catalog.product.created` | 1 | Catalog | Inventory, PDV, Analytics, Audit | product id, sku, active flag, version |
+| `catalog.product.updated` | 1 | Catalog | Inventory, PDV, Analytics, Audit | product id, changed fields, version |
+| `catalog.product.deactivated` | 1 | Catalog | Inventory, PDV, Analytics, Audit | product id, deactivated at, version |
+| `catalog.productcode.created` | 1 | Catalog | PDV, Integrations, Analytics, Audit | code id, product id, type, value |
+| `catalog.productunit.created` | 1 | Catalog | Inventory, PDV, Analytics, Audit | product unit id, product id, unit id, factor |
+| `catalog.price.changed` | 1 | Catalog | PDV, Sales, Analytics, Audit | price id, product id, branch id, amount, validity |
 
 Consumidores deduplicam por `event_id`. Mudança incompatível cria nova versão; eventos publicados não são reescritos.
 

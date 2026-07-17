@@ -438,7 +438,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 3 — Estoque e Movimentações
 
-**Estado:** Planejada; execução bloqueada até o aceite da Sprint 2.
+**Estado:** Em execução; hardening técnico aplicado após aceite da Sprint 2.
 
 **Objetivo:** controlar saldo por filial por meio de movimentos imutáveis e operações idempotentes.
 
@@ -458,7 +458,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 3.2 Lotes e validade
 
-- [ ] Criar lotes opcionais por produto.
+- [x] Criar lotes opcionais por produto.
 - [ ] Exigir lote quando configurado no produto.
 - [ ] Exigir validade quando configurada no produto.
 - [ ] Impedir movimentação comum de lote vencido.
@@ -466,10 +466,10 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 3.3 Ledger e projeção
 
-- [ ] Criar operação agregadora de estoque.
-- [ ] Criar movimentos imutáveis de entrada e saída.
-- [ ] Preservar unidade, fator e quantidade informados.
-- [ ] Criar saldo projetado por produto, filial, local e lote.
+- [x] Criar operação agregadora de estoque.
+- [x] Criar movimentos imutáveis de entrada e saída.
+- [x] Preservar unidade, fator e quantidade informados.
+- [x] Criar saldo projetado por produto, filial, local e lote.
 - [ ] Impedir saldo negativo por serviço e constraint.
 - [ ] Impedir edição ou exclusão de movimento confirmado.
 
@@ -497,8 +497,8 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [ ] Aplicar e forçar RLS em todas as tabelas tenant-scoped.
 - [ ] Validar acesso a todas as filiais da operação.
 - [ ] Retornar 404 para recursos fora do tenant ou escopo autorizado.
-- [ ] Criar APIs de locais, lotes, saldos e operações.
-- [ ] Manter movimentos e saldos somente leitura pela API.
+- [x] Criar APIs de locais, lotes, saldos e operações.
+- [x] Manter movimentos e saldos somente leitura pela API.
 - [ ] Padronizar erros de estoque em RFC 9457.
 - [ ] Criar testes de RLS, IDOR e ausência de contexto.
 

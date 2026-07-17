@@ -181,3 +181,42 @@ class Invitation(models.Model):
 
     def __str__(self):
         return f'{self.email} invited to {self.tenant}'
+
+
+class Device(TimeStampedModel, TenantScopedModel):
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('revoked', 'Revoked'),
+    ]
+
+    name = models.CharField(max_length=100)
+    device_id = models.CharField(max_length=100)
+    key_hash = models.CharField(max_length=128)
+    branch = models.ForeignKey(
+        Branch, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='devices',
+    )
+    platform = models.CharField(max_length=50, blank=True, default='')
+    app_version = models.CharField(max_length=30, blank=True, default='')
+    os_version = models.CharField(max_length=50, blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    registered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='registered_devices',
+    )
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'device_id'], name='uniq_device_tenant_deviceid',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.name} ({self.device_id}) [{self.tenant.name}]'

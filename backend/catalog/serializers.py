@@ -93,7 +93,7 @@ class ProductPriceSerializer(FullCleanModelSerializer):
             'id', 'product', 'amount', 'valid_from', 'valid_to',
             'is_active', 'version',
         ]
-        read_only_fields = ['id', 'product', 'version']
+        read_only_fields = ['id', 'product', 'version', 'is_active']
 
 
 class BranchPriceSerializer(FullCleanModelSerializer):

@@ -72,6 +72,16 @@ class StockLocation(VersionedInventoryModel):
         if self.branch_id and self.tenant_id and self.branch.tenant_id != self.tenant_id:
             raise ValidationError({'branch': 'Branch must belong to the same tenant.'})
 
+    def delete(self, *args, **kwargs):
+        if (
+            StockMovement.all_objects.filter(location=self).exists()
+            or StockBalance.all_objects.filter(location=self)
+            .exclude(quantity=0, reserved=0)
+            .exists()
+        ):
+            raise ValidationError('Stock location with history cannot be deleted.')
+        return super().delete(*args, **kwargs)
+
 
 class StockLot(VersionedInventoryModel):
     product = models.ForeignKey(
@@ -314,24 +324,6 @@ class StockBalance(VersionedInventoryModel):
                 raise ValidationError({'lot': 'Lot must belong to the same tenant.'})
             if self.lot.product_id != self.product_id:
                 raise ValidationError({'lot': 'Lot must belong to the same product.'})
-
-
-def _location_has_history(location):
-    return (
-        StockMovement.all_objects.filter(location=location).exists()
-        or StockBalance.all_objects.filter(location=location)
-        .exclude(quantity=0, reserved=0)
-        .exists()
-    )
-
-
-def _protected_stock_location_delete(self, *args, **kwargs):
-    if _location_has_history(self):
-        raise ValidationError('Stock location with history cannot be deleted.')
-    return super(StockLocation, self).delete(*args, **kwargs)
-
-
-StockLocation.delete = _protected_stock_location_delete
 
 
 class StockOperationReversal(VersionedInventoryModel):

@@ -118,5 +118,6 @@ Desktop.ini
 # Local agent state
 .agents/
 .codex/
+.opencode/
 .worktrees/
 worktrees/

@@ -11,7 +11,7 @@ User = get_user_model()
 
 
 @pytest.fixture(scope='session')
-def django_db_setup():
+def django_db_setup(django_db_blocker):
     """Use the pre-provisioned PostgreSQL test database.
 
     The project uses separate runtime and migration owners. Letting
@@ -22,6 +22,8 @@ def django_db_setup():
     import psycopg
     from decouple import Config, RepositoryEnv, config
     from django.conf import settings
+    from django.core.management import call_command
+    from psycopg import sql
 
     test_name = settings.DATABASES['default'].get('TEST', {}).get('NAME')
     if test_name:
@@ -40,11 +42,38 @@ def django_db_setup():
         port=database['PORT'],
         connect_timeout=5,
     )
-    conn.execute(f'GRANT USAGE ON SCHEMA public TO "{runtime_user}"')
-    conn.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "{runtime_user}"')
-    conn.execute(f'GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "{runtime_user}"')
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT tablename
+            FROM pg_tables
+            WHERE schemaname = 'public'
+              AND tablename <> 'django_migrations'
+            ORDER BY tablename
+            """
+        )
+        tables = [row[0] for row in cursor.fetchall()]
+        if tables:
+            cursor.execute(
+                sql.SQL('TRUNCATE TABLE {} RESTART IDENTITY CASCADE').format(
+                    sql.SQL(', ').join(
+                        sql.Identifier('public', table) for table in tables
+                    )
+                )
+            )
+        cursor.execute(sql.SQL('GRANT USAGE ON SCHEMA public TO {}').format(
+            sql.Identifier(runtime_user),
+        ))
+        cursor.execute(sql.SQL(
+            'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO {}'
+        ).format(sql.Identifier(runtime_user)))
+        cursor.execute(sql.SQL(
+            'GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO {}'
+        ).format(sql.Identifier(runtime_user)))
     conn.commit()
     conn.close()
+    with django_db_blocker.unblock():
+        call_command('migrate', verbosity=0, interactive=False)
 
 
 def _run_in_tenant(tenant, callback):

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Sum
@@ -49,7 +51,11 @@ class StockWriteSerializer(serializers.Serializer):
     location = serializers.UUIDField()
     quantity = serializers.DecimalField(max_digits=18, decimal_places=6)
     unit = serializers.UUIDField()
-    factor = serializers.DecimalField(max_digits=18, decimal_places=6, default=1)
+    factor = serializers.DecimalField(
+        max_digits=18,
+        decimal_places=6,
+        default=Decimal('1'),
+    )
     lot = serializers.UUIDField(required=False, allow_null=True)
     reason = serializers.CharField(required=False, allow_blank=True, default='')
     unit_cost = serializers.DecimalField(
@@ -68,7 +74,11 @@ class StockTransferSerializer(serializers.Serializer):
     target_location = serializers.UUIDField()
     quantity = serializers.DecimalField(max_digits=18, decimal_places=6)
     unit = serializers.UUIDField()
-    factor = serializers.DecimalField(max_digits=18, decimal_places=6, default=1)
+    factor = serializers.DecimalField(
+        max_digits=18,
+        decimal_places=6,
+        default=Decimal('1'),
+    )
     lot = serializers.UUIDField(required=False, allow_null=True)
     reason = serializers.CharField(required=False, allow_blank=True, default='')
 

@@ -104,8 +104,55 @@ C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_inventory_closure.py tests/
 Resultado: 12 passed, 3 warnings.
 ```
 
+## Pre-flight para Sprint 4
+
+Em 2026-07-17, após revisão das Sprints 0 a 3, foram corrigidas pendências de qualidade antes de avançar para vendas/caixa:
+
+- setup de testes PostgreSQL pré-provisionado passou a reiniciar dados de aplicação no início da sessão;
+- erros de teardown em `contenttypes`/`auth_permissions` nos testes transacionais foram eliminados;
+- erros de `mypy` em `inventory` foram corrigidos;
+- utilitários de configuração/health check ganharam cobertura adicional;
+- PRD e relatórios foram alinhados ao estado real.
+
+Gate final executado:
+
+```text
+C:\ERP\.venv\Scripts\python.exe -m pytest -q
+Resultado: 192 passed, 3 warnings, cobertura total 80.19%.
+```
+
+```text
+C:\ERP\.venv\Scripts\python.exe -m ruff check .
+Resultado: All checks passed!
+```
+
+```text
+C:\ERP\.venv\Scripts\python.exe -m mypy .
+Resultado: Success: no issues found in 128 source files.
+```
+
+```text
+C:\ERP\.venv\Scripts\python.exe manage.py check
+Resultado: System check identified no issues (0 silenced).
+```
+
+```text
+C:\ERP\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
+Resultado: No changes detected.
+```
+
+```text
+python manage.py check --deploy com settings de produção e placeholders seguros
+Resultado: System check identified no issues (0 silenced).
+```
+
+```text
+git grep de padrões comuns de segredo
+Resultado: sem ocorrências.
+```
+
 ## Status
 
 Status técnico: núcleo de inventory carregável, lint limpo, serializers, rotas, serviços idempotentes, RLS e reconciliação estabilizados.
 
-Status da Sprint 3: concluída localmente, pendente apenas de validação remota/CI quando o branch for enviado.
+Status da Sprint 3: concluída localmente e preparada para PR/CI remota. Sprint 4 pode ser detalhada após validação da branch no GitHub.

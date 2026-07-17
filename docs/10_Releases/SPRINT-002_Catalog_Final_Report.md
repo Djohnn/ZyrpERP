@@ -34,22 +34,20 @@ C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_catalog_api_hardening.py --
 Resultado: 5 tests collected.
 ```
 
-## Limitação de verificação local
+## Revalidação no pre-flight da Sprint 4
 
-A execução real dos testes com banco não concluiu no ambiente local desta rodada. O runner coleta os testes corretamente, mas trava ao iniciar a execução contra o PostgreSQL de teste configurado em `127.0.0.1:5433`.
+Em 2026-07-17, o setup de testes com banco PostgreSQL pré-provisionado foi estabilizado para reiniciar dados de aplicação no início da sessão e evitar inconsistências de `contenttypes`/`auth_permissions` em testes transacionais.
 
-Comando que travou até timeout:
+Comandos reexecutados com sucesso:
 
 ```text
-C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_catalog_api_hardening.py -q -o addopts=''
-Resultado: timeout sem saída após iniciar execução.
+C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_catalog_rls.py -q -o addopts=''
+Resultado: 9 passed.
 ```
 
-Essa limitação não deve ser tratada como suíte verde. Antes de marcar CI/local como aprovado, subir o PostgreSQL de teste ou ajustar o ambiente e rodar:
-
 ```text
-cd backend
-C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_catalog_api_hardening.py tests/test_catalog_api.py tests/test_catalog_pricing.py tests/test_catalog_rls.py -q -o addopts=''
+C:\ERP\.venv\Scripts\python.exe -m pytest -q
+Resultado: 192 passed, cobertura total 80.19%.
 ```
 
 ## Riscos e decisões
@@ -70,6 +68,6 @@ C:\ERP\.venv\Scripts\python.exe -m pytest tests/test_catalog_api_hardening.py te
 
 ## Status
 
-Status técnico: hardening aplicado e validação estática concluída.
+Status técnico: hardening aplicado, validação estática concluída e regressão com banco revalidada no pre-flight da Sprint 4.
 
-Status de testes com banco: pendente de ambiente PostgreSQL local/CI saudável.
+Status de testes com banco: aprovado localmente com PostgreSQL real. CI remota deve ser validada no PR/merge.

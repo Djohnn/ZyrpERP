@@ -1,18 +1,20 @@
 import hashlib
+
 from decouple import config
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
 
-from tenancy.context import set_current_tenant_id, reset_current_tenant_id
-from tenancy.models import Tenant, Company, Branch, Device
-from catalog.models import Unit, Category, Product, ProductPrice
+from catalog.models import Category, Product, ProductPrice, Unit
 from inventory.models import StockLocation
+from tenancy.context import reset_current_tenant_id, set_current_tenant_id
+from tenancy.models import Branch, Company, Device, Tenant
 
 User = get_user_model()
 
 E2E_API_KEY = 'e2e-test-key-2026'
-E2E_PASSWORD = 'e2e-test-pwd-2026'
+E2E_PASSWORD = 'e2e-test-pwd-2026'  # noqa: S105
+
 
 class Command(BaseCommand):
     help = 'Cria dados de teste E2E para o PDV (dispositivo, produto, local de estoque).'
@@ -32,9 +34,13 @@ class Command(BaseCommand):
         try:
             with transaction.atomic():
                 with connection.cursor() as cursor:
-                    cursor.execute("SELECT set_config('app.current_tenant_id', %s, true)", [str(tenant.id)])
+                    cursor.execute(
+                        "SELECT set_config('app.current_tenant_id', %s, true)",
+                        [str(tenant.id)],
+                    )
 
                 from tenancy.models import TenantMembership
+
                 TenantMembership.objects.get_or_create(
                     user=admin_user, tenant=tenant,
                     defaults={'role': 'admin', 'is_active': True},

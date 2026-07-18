@@ -18,15 +18,15 @@ class DeviceJWTAuthentication(JWTAuthentication):
 
         try:
             device_id = uuid.UUID(raw)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as exc:
             logger.warning('Invalid device_id in JWT: %s', raw)
-            raise AuthenticationFailed('Invalid device_id format')
+            raise AuthenticationFailed('Invalid device_id format') from exc
 
         try:
             device = Device.all_objects.select_related('registered_by').get(id=device_id)
-        except Device.DoesNotExist:
+        except Device.DoesNotExist as exc:
             logger.warning('Device not found: %s', device_id)
-            raise AuthenticationFailed('Device not found')
+            raise AuthenticationFailed('Device not found') from exc
 
         logger.info('Device found: %s (registered_by=%s)', device.id, device.registered_by)
 
@@ -34,11 +34,15 @@ class DeviceJWTAuthentication(JWTAuthentication):
             return device.registered_by
 
         membership = (
-            TenantMembership.objects.filter(tenant=device.tenant, is_active=True)
+            TenantMembership.objects.filter(
+                tenant=device.tenant,
+                is_active=True,
+                user__is_active=True,
+            )
             .select_related('user')
             .first()
         )
-        if membership and membership.user.is_active:
+        if membership:
             return membership.user
 
         raise AuthenticationFailed('Device has no registered user and no active members found')

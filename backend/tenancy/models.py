@@ -46,6 +46,8 @@ class Tenant(TimeStampedModel):
 class Company(TimeStampedModel, TenantScopedModel):
     name = models.CharField(max_length=200)
     cnpj = models.CharField(max_length=18, blank=True, default='')
+    ie = models.CharField('Inscrição Estadual', max_length=20, blank=True, default='')
+    address_json = models.JSONField(default=dict, blank=True)
     is_active = models.BooleanField(default=True)
 
     objects = TenantManager()
@@ -66,6 +68,8 @@ class Branch(TimeStampedModel, TenantScopedModel):
     )
     name = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
+    ie = models.CharField('Inscrição Estadual', max_length=20, blank=True, default='')
+    address_json = models.JSONField(default=dict, blank=True)
 
     objects = TenantManager()
     all_objects = models.Manager()

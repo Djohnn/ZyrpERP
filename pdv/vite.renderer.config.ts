@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-  root: 'src/renderer',
+  root: path.resolve(__dirname, 'src/renderer'),
   plugins: [react()],
   resolve: {
     alias: {
@@ -21,7 +21,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../../dist/renderer',
+    outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
   },
 });

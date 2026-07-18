@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from django.db import connection, transaction
@@ -5,6 +6,8 @@ from django.http import JsonResponse
 
 from tenancy.context import reset_current_tenant_id, set_current_tenant_id
 from tenancy.models import TenantMembership
+
+logger = logging.getLogger(__name__)
 
 
 class TenantMiddleware:
@@ -19,10 +22,13 @@ class TenantMiddleware:
                 result = DeviceJWTAuthentication().authenticate(request)
                 if result:
                     request.user, request.auth = result
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning('Device JWT authentication failed: %s', exc)
 
     def __call__(self, request):
+        if request.path.startswith('/api/v1/fiscal/webhook/'):
+            return self.get_response(request)
+
         tenant = None
         tenant_header = request.headers.get('X-Tenant-ID')
 

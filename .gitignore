@@ -13,6 +13,7 @@
 *.keystore
 secrets/
 credentials/
+teste_manual.txt
 
 # Python / Django
 __pycache__/
@@ -81,6 +82,9 @@ pnpm-debug.log*
 *.sqlite-wal
 pdv-data/
 offline-data/
+pdv/test-results/
+pdv/qa-*.png
+qa_setup_data.py
 
 # Containers and local infrastructure
 docker-compose.override.yml

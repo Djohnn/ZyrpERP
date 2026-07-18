@@ -33,12 +33,14 @@ LOCAL_APPS = [
     'catalog',
     'inventory',
     'sales',
+    'fiscal',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
         'tenancy.authentication.DeviceJWTAuthentication',
     ],
@@ -118,6 +120,14 @@ _DEV_MFA_KEY = base64.urlsafe_b64encode(
 MFA_ENCRYPTION_KEY = config('MFA_ENCRYPTION_KEY', default=_DEV_MFA_KEY)
 
 LOG_LEVEL = config('LOG_LEVEL', default='INFO')
+
+PLUGNOTAS_API_KEY = config('PLUGNOTAS_API_KEY', default='')
+FISCAL_PROVIDERS = {
+    'plugnotas': {
+        'class': 'fiscal.adapters.plugnotas.PlugNotasAdapter',
+        'api_key': PLUGNOTAS_API_KEY,
+    },
+}
 
 LOGGING = {
     'version': 1,

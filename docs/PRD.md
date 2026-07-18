@@ -48,6 +48,13 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 | 6 | Concluída | Contingência offline e sincronização |
 | 7 | A detalhar | Integração fiscal por provider |
 | 8 | A detalhar | Piloto, observabilidade e hardening |
+| 9 | A detalhar | Devoluções, cancelamentos e estornos |
+| 10 | A detalhar | Compras, recebimento e contas a pagar |
+| 11 | A detalhar | Financeiro, fluxo de caixa e relatórios |
+| 12 | A detalhar | Pessoas, clientes e parceiros |
+| 13 | A detalhar | Pagamentos integrados e conciliação |
+| 14 | A detalhar | IA readiness e copiloto somente leitura |
+| 15 | A detalhar | SaaS comercial e administração da plataforma |
 
 ---
 
@@ -660,15 +667,367 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 7 — Integração Fiscal
 
-**Estado:** A detalhar e aprovar antes de executar.  
-**Objetivo:** emitir NF-e/NFC-e por provedor externo atrás do contrato `FiscalProvider`.  
+**Estado:** Implementada em validação técnica local.
+**Objetivo:** emitir NFC-e por provedor externo atrás do contrato `FiscalProvider`.
 **Entregável:** configuração por cliente, emissão assíncrona, estados fiscais, retries e webhooks idempotentes.
+
+**Especificação:** [Design da Sprint 7](superpowers/specs/2026-07-18-sprint-7-fiscal-nfce-design.md)
+
+**Plano:** [Plano de implementação da Sprint 7](superpowers/plans/2026-07-18-sprint-7-fiscal-nfce-implementation-plan.md)
+
+#### 7.1 Fundação fiscal
+
+- [x] Criar app Django `fiscal`.
+- [x] Adicionar `Product.ncm`.
+- [x] Adicionar `ie` e `address_json` em `Company` e `Branch`.
+- [x] Criar models `FiscalEmitter`, `FiscalProductConfig` e `FiscalDocument`.
+- [x] Criar migrations de `catalog`, `tenancy` e `fiscal`.
+
+#### 7.2 Provider e PlugNotas
+
+- [x] Criar contrato `FiscalProvider`.
+- [x] Criar `EmitResult`, `QueryResult` e `CancelResult`.
+- [x] Implementar `PlugNotasAdapter.emit()`.
+- [x] Implementar `PlugNotasAdapter.query()`.
+- [x] Implementar `PlugNotasAdapter.cancel()`.
+- [x] Ler `PLUGNOTAS_API_KEY` por settings, sem versionar credenciais reais.
+
+#### 7.3 Emissão assíncrona e polling
+
+- [x] Implementar `emit_nfce()` idempotente por venda.
+- [x] Falhar com erro claro quando a filial não tiver emitente fiscal configurado.
+- [x] Falhar com erro claro quando produto não tiver NCM.
+- [x] Criar documento `PROCESSING` quando o provedor aceitar a emissão.
+- [x] Implementar polling `PROCESSING → CONCLUDED`.
+- [x] Implementar rejeição `PROCESSING → REJECTED` com tentativa ativa nova quando permitido.
+- [x] Registrar handler de outbox para `sales.sale.confirmed`.
+- [x] Adicionar schedule Celery Beat para polling fiscal.
+
+#### 7.4 API e webhook
+
+- [x] Criar `GET /api/v1/sales/{sale_id}/fiscal-status/`.
+- [x] Garantir isolamento por tenant no status fiscal.
+- [x] Criar `POST /api/v1/fiscal/webhook/`.
+- [x] Isentar webhook de `TenantMiddleware`.
+- [x] Webhook usa payload apenas como índice e consulta o provider como fonte da verdade.
+
+#### 7.5 Admin e testes
+
+- [x] Registrar models fiscais no Django Admin.
+- [x] Criar testes unitários do adapter PlugNotas.
+- [x] Criar testes de emissão/polling fiscal.
+- [x] Criar testes de API fiscal e webhook.
+- [x] Criar testes de integração com outbox.
 
 ### Sprint 8 — Piloto, Observabilidade e Hardening
 
-**Estado:** A detalhar e aprovar antes de executar.  
+**Estado:** Planejada; spec e plan preparados em 2026-07-18.
 **Objetivo:** preparar um piloto controlado com segurança, operação, suporte e recuperação verificáveis.  
 **Entregável:** release candidata com SLOs iniciais, alertas, backup restaurado, runbooks e critérios de rollback.
+
+**Especificação:** [Design da Sprint 8](superpowers/specs/2026-07-18-sprint-8-pilot-observability-hardening-design.md)
+
+**Plano:** [Plano de implementação da Sprint 8](superpowers/plans/2026-07-18-sprint-8-pilot-observability-hardening-implementation-plan.md)
+
+#### 8.1 Checklist de piloto
+
+- [ ] Criar checklist de readiness do piloto.
+- [ ] Registrar responsáveis por Produto, Engenharia e Suporte.
+- [ ] Definir critérios objetivos de entrada e saída do piloto.
+
+#### 8.2 Health, readiness e smoke tests
+
+- [ ] Expor readiness com banco, Redis/cache e Outbox.
+- [ ] Criar smoke test backend.
+- [ ] Criar smoke test PDV/frontend.
+- [ ] Garantir correlation ID nas respostas críticas.
+
+#### 8.3 Métricas, dashboards e alertas
+
+- [ ] Documentar painéis de API, Outbox, fiscal, PDV offline e dependências.
+- [ ] Implementar ou expor helpers de métricas seguras.
+- [ ] Definir thresholds iniciais como baseline de piloto.
+
+#### 8.4 Backup, restore e runbooks
+
+- [ ] Criar script de backup sem segredos embutidos.
+- [ ] Criar script de restore verificável em ambiente descartável.
+- [ ] Criar runbook de backup/restore.
+- [ ] Criar runbook de incidentes SEV-1 a SEV-4.
+- [ ] Criar runbook de rollback.
+
+#### 8.5 Segurança e aceite
+
+- [ ] Executar scanner/grep de segredos.
+- [ ] Executar suíte backend, frontend/PDV disponível, Ruff, mypy e checks Django.
+- [ ] Registrar evidências no relatório final da Sprint 8.
+- [ ] Criar commit final `chore: sprint 8 - piloto observabilidade hardening`.
+
+### Sprint 9 — Devoluções, Cancelamentos e Estornos
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Objetivo:** completar o ciclo pós-venda com fatos compensatórios auditáveis.
+**Entregável:** devolução parcial/total, cancelamento, reentrada de estoque, reembolso/estorno e integração fiscal quando aplicável.
+
+**Especificação:** [Design da Sprint 9](superpowers/specs/2026-07-18-sprint-9-returns-cancellations-refunds-design.md)
+
+**Plano:** [Plano de implementação da Sprint 9](superpowers/plans/2026-07-18-sprint-9-returns-cancellations-refunds-implementation-plan.md)
+
+#### 9.1 Domínio pós-venda
+
+- [ ] Criar modelos de devolução, item devolvido, reembolso e cancelamento.
+- [ ] Garantir venda confirmada imutável.
+- [ ] Bloquear devolução acima da quantidade vendida líquida.
+
+#### 9.2 Serviços transacionais
+
+- [ ] Implementar devolução parcial/total idempotente.
+- [ ] Reentrar estoque por movimento auditável.
+- [ ] Registrar reembolso em dinheiro, Pix ou cartão externo.
+- [ ] Implementar cancelamento total com compensações necessárias.
+
+#### 9.3 Fiscal e API
+
+- [ ] Solicitar cancelamento fiscal quando documento autorizado permitir.
+- [ ] Expor endpoints de devolução, cancelamento e consulta.
+- [ ] Retornar Problem Details para erros de regra.
+- [ ] Testar isolamento cross-tenant.
+
+#### 9.4 Qualidade e aceite
+
+- [ ] Criar testes de models, services e API.
+- [ ] Executar suíte focada e suíte completa.
+- [ ] Registrar evidências no relatório final da Sprint 9.
+- [ ] Criar commit final `feat: sprint 9 - devolucoes cancelamentos estornos`.
+
+### Sprint 10 — Compras, Recebimento e Contas a Pagar
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Objetivo:** implementar reposição básica com pedido de compra, recebimento, entrada de estoque e obrigação financeira.
+**Entregável:** fluxo fornecedor → pedido → recebimento parcial/total → estoque → conta a pagar.
+
+**Especificação:** [Design da Sprint 10](superpowers/specs/2026-07-18-sprint-10-purchasing-receiving-payables-design.md)
+
+**Plano:** [Plano de implementação da Sprint 10](superpowers/plans/2026-07-18-sprint-10-purchasing-receiving-payables-implementation-plan.md)
+
+#### 10.1 Fundação de compras
+
+- [ ] Criar app `purchasing`.
+- [ ] Criar fornecedor, pedido de compra e itens.
+- [ ] Implementar aprovação de pedido e imutabilidade após aprovação.
+
+#### 10.2 Recebimento e estoque
+
+- [ ] Criar recebimento e itens recebidos.
+- [ ] Permitir recebimento parcial.
+- [ ] Bloquear recebimento acima do pendente.
+- [ ] Gerar entrada de estoque idempotente.
+
+#### 10.3 Contas a pagar
+
+- [ ] Criar obrigação financeira a partir do recebimento.
+- [ ] Garantir vínculo com fornecedor, pedido e recebimento.
+- [ ] Bloquear duplicidade por retry.
+
+#### 10.4 API e aceite
+
+- [ ] Expor CRUD de fornecedor, pedido, aprovação e recebimento.
+- [ ] Testar cross-tenant, idempotência e regras de status.
+- [ ] Registrar evidências no relatório final da Sprint 10.
+- [ ] Criar commit final `feat: sprint 10 - compras recebimento contas a pagar`.
+
+### Sprint 11 — Financeiro, Fluxo de Caixa e Relatórios Operacionais
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Objetivo:** consolidar contas a pagar/receber, liquidações, fluxo de caixa e relatórios operacionais.
+**Entregável:** visão gerencial inicial por período, tenant, empresa e filial, preparada para futura IA somente leitura.
+
+**Especificação:** [Design da Sprint 11](superpowers/specs/2026-07-18-sprint-11-financial-cashflow-reporting-design.md)
+
+**Plano:** [Plano de implementação da Sprint 11](superpowers/plans/2026-07-18-sprint-11-financial-cashflow-reporting-implementation-plan.md)
+
+#### 11.1 Núcleo financeiro
+
+- [ ] Criar ou consolidar app `financial`.
+- [ ] Criar contas financeiras, recebíveis, pagáveis, liquidações e fluxo de caixa.
+- [ ] Garantir imutabilidade de lançamentos confirmados.
+
+#### 11.2 Integrações financeiras
+
+- [ ] Registrar efeitos financeiros de vendas.
+- [ ] Registrar efeitos financeiros de compras.
+- [ ] Implementar liquidação parcial/total.
+- [ ] Bloquear baixa acima do saldo.
+
+#### 11.3 Relatórios e exportações
+
+- [ ] Criar relatórios de vendas, caixa, estoque, financeiro e pendências fiscais/offline.
+- [ ] Adicionar filtros por período, filial e status.
+- [ ] Limitar exportações e proteger dados sensíveis.
+
+#### 11.4 Preparação futura para IA
+
+- [ ] Documentar read models permitidos para RAG/copiloto futuro.
+- [ ] Classificar campos financeiros/fiscais sensíveis.
+- [ ] Manter IA fora da execução transacional.
+
+#### 11.5 Qualidade e aceite
+
+- [ ] Criar testes de models, services, relatórios e API.
+- [ ] Executar suíte focada e suíte completa.
+- [ ] Registrar evidências no relatório final da Sprint 11.
+- [ ] Criar commit final `feat: sprint 11 - financeiro fluxo caixa relatorios`.
+
+### Sprint 12 — Pessoas, Clientes e Parceiros
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Objetivo:** criar cadastro operacional de pessoas PF/PJ para clientes, fornecedores, transportadores e contatos.
+**Entregável:** pessoas tenant-scoped com documentos, endereços, contatos, papéis, consentimentos e integração com vendas/compras/fiscal.
+
+**Especificação:** [Design da Sprint 12](superpowers/specs/2026-07-18-sprint-12-people-customers-partners-design.md)
+
+**Plano:** [Plano de implementação da Sprint 12](superpowers/plans/2026-07-18-sprint-12-people-customers-partners-implementation-plan.md)
+
+#### 12.1 Fundação de pessoas
+
+- [ ] Criar app `people`.
+- [ ] Criar modelos `Person`, `PersonRole`, `PersonDocument`, `PersonAddress`, `PersonContact` e `ConsentRecord`.
+- [ ] Normalizar CPF/CNPJ, e-mail, telefone e endereço.
+- [ ] Garantir unicidade de documento ativo por tenant.
+
+#### 12.2 Serviços, auditoria e LGPD
+
+- [ ] Implementar criação/atualização/desativação de pessoa.
+- [ ] Preservar histórico por exclusão lógica.
+- [ ] Auditar alterações sensíveis.
+- [ ] Atualizar classificação de dados pessoais.
+
+#### 12.3 Integrações e API
+
+- [ ] Expor APIs de pessoas, endereços, contatos e consentimentos.
+- [ ] Permitir venda com cliente identificado sem bloquear venda anônima.
+- [ ] Relacionar fornecedor de compras a `Person`.
+- [ ] Preparar dados de destinatário fiscal.
+
+#### 12.4 Qualidade e aceite
+
+- [ ] Criar testes de models, services, API e integrações.
+- [ ] Testar isolamento cross-tenant.
+- [ ] Registrar evidências no relatório final da Sprint 12.
+- [ ] Criar commit final `feat: sprint 12 - pessoas clientes parceiros`.
+
+### Sprint 13 — Pagamentos Integrados e Conciliação
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Objetivo:** evoluir de pagamento manual para contratos de provider, webhooks idempotentes e conciliação financeira.
+**Entregável:** app `payments` com provider fake, transações, webhooks, conciliação bruto/líquido e integração financeira.
+
+**Especificação:** [Design da Sprint 13](superpowers/specs/2026-07-18-sprint-13-payments-reconciliation-design.md)
+
+**Plano:** [Plano de implementação da Sprint 13](superpowers/plans/2026-07-18-sprint-13-payments-reconciliation-implementation-plan.md)
+
+#### 13.1 Fundação de pagamentos
+
+- [ ] Criar app `payments`.
+- [ ] Criar configuração de provider, intenção, transação, webhook e conciliação.
+- [ ] Manter pagamento externo/manual funcionando.
+- [ ] Proteger segredos de provider.
+
+#### 13.2 Provider e webhooks
+
+- [ ] Definir contrato `PaymentProvider`.
+- [ ] Implementar provider fake determinístico.
+- [ ] Validar webhook e idempotência.
+- [ ] Separar autorização, captura, cancelamento e estorno.
+
+#### 13.3 Conciliação financeira
+
+- [ ] Importar lote de conciliação.
+- [ ] Comparar valor bruto, taxa e líquido.
+- [ ] Gerar liquidação ou ajuste financeiro.
+- [ ] Sinalizar divergência para revisão manual.
+
+#### 13.4 Qualidade e aceite
+
+- [ ] Criar testes de provider, services, webhooks, conciliação e API.
+- [ ] Testar segredo ausente em logs/auditoria/outbox.
+- [ ] Registrar evidências no relatório final da Sprint 13.
+- [ ] Criar commit final `feat: sprint 13 - pagamentos conciliacao`.
+
+### Sprint 14 — IA Readiness e Copiloto Somente Leitura
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Objetivo:** preparar base segura para IA futura, começando por RAG documental e copiloto operacional somente leitura.
+**Entregável:** governança de fontes, redaction, autorização, auditoria, provider fake e API de consulta sem ações transacionais.
+
+**Especificação:** [Design da Sprint 14](superpowers/specs/2026-07-18-sprint-14-ai-readiness-readonly-copilot-design.md)
+
+**Plano:** [Plano de implementação da Sprint 14](superpowers/plans/2026-07-18-sprint-14-ai-readiness-readonly-copilot-implementation-plan.md)
+
+#### 14.1 Governança de IA
+
+- [ ] Documentar fontes permitidas e proibidas.
+- [ ] Documentar política somente leitura.
+- [ ] Atualizar classificação de dados para interações com IA.
+- [ ] Definir que ações de escrita exigirão aprovação humana futura.
+
+#### 14.2 Copiloto e redaction
+
+- [ ] Criar app `copilot` ou `ai_core`.
+- [ ] Criar registro de fontes, consultas, citações e feedback.
+- [ ] Implementar redaction de dados restritos.
+- [ ] Auditar perguntas e respostas sem vazar segredo.
+
+#### 14.3 Query API
+
+- [ ] Implementar provider fake para testes determinísticos.
+- [ ] Responder perguntas documentais com citações.
+- [ ] Responder perguntas operacionais apenas via read models permitidos.
+- [ ] Bloquear consulta cross-tenant.
+
+#### 14.4 Qualidade e aceite
+
+- [ ] Criar testes de modelos, redaction, autorização, services e API.
+- [ ] Provar que IA não escreve em vendas, fiscal, estoque ou financeiro.
+- [ ] Registrar evidências no relatório final da Sprint 14.
+- [ ] Criar commit final `feat: sprint 14 - ia readiness copiloto leitura`.
+
+### Sprint 15 — SaaS Comercial e Administração da Plataforma
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Objetivo:** preparar operação comercial SaaS com planos, assinaturas, entitlements, suspensão, suporte e feature flags.
+**Entregável:** administração de plataforma separada dos dados operacionais do cliente.
+
+**Especificação:** [Design da Sprint 15](superpowers/specs/2026-07-18-sprint-15-saas-commercial-admin-design.md)
+
+**Plano:** [Plano de implementação da Sprint 15](superpowers/plans/2026-07-18-sprint-15-saas-commercial-admin-implementation-plan.md)
+
+#### 15.1 Núcleo comercial SaaS
+
+- [ ] Criar ou consolidar app `platform`.
+- [ ] Criar plano, assinatura, entitlement e feature flag.
+- [ ] Definir política de tenant ativo, suspenso e cancelado.
+- [ ] Separar cobrança externa de capacidades internas.
+
+#### 15.2 Entitlements, flags e suporte
+
+- [ ] Implementar consulta de capacidade e limite por tenant.
+- [ ] Implementar feature flags tenant-scoped.
+- [ ] Implementar solicitação de acesso de suporte temporário.
+- [ ] Auditar toda ação administrativa.
+
+#### 15.3 API administrativa
+
+- [ ] Expor endpoints admin-only para planos, assinaturas, entitlements, flags e suporte.
+- [ ] Bloquear usuário comum e cross-tenant.
+- [ ] Retornar Problem Details para permissão, suspensão e conflitos.
+
+#### 15.4 Qualidade e aceite
+
+- [ ] Criar testes de models, services e API administrativa.
+- [ ] Documentar modelo operacional SaaS.
+- [ ] Registrar evidências no relatório final da Sprint 15.
+- [ ] Criar commit final `feat: sprint 15 - saas comercial admin`.
 
 ---
 

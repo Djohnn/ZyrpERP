@@ -6,7 +6,10 @@ from .models import Sale, SaleItem, SalePayment
 class SaleItemInline(admin.TabularInline):
     model = SaleItem
     extra = 0
-    readonly_fields = ['product', 'unit', 'quantity', 'factor', 'unit_price', 'discount_amount', 'line_total']
+    readonly_fields = [
+        'product', 'unit', 'quantity', 'factor', 'unit_price',
+        'discount_amount', 'line_total',
+    ]
     can_delete = False
 
     def get_queryset(self, request):

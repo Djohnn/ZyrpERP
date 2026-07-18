@@ -203,7 +203,14 @@ export function Sale() {
       }
 
       const sale = await response.json();
-      setReceipt(sale);
+      const receiptItems = sale.items?.map((saleItem: any) => {
+        const cartItem = items.find(item => item.product.id === saleItem.product);
+        return {
+          ...saleItem,
+          product: cartItem?.product || saleItem.product,
+        };
+      });
+      setReceipt({ ...sale, items: receiptItems || sale.items });
       setItems([]);
       setPayments([]);
       setError('');
@@ -215,6 +222,16 @@ export function Sale() {
   };
 
   if (!isAuthenticated) return null;
+
+  const formatReceiptQuantity = (quantity: string | number): string => {
+    const value = Number(quantity);
+    if (!Number.isFinite(value)) return String(quantity);
+    return value.toFixed(1);
+  };
+
+  const handlePrintReceipt = () => {
+    window.print();
+  };
 
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
@@ -465,8 +482,13 @@ export function Sale() {
               </div>
               <div style={{ borderTop: '1px solid #e0e0e0', borderBottom: '1px solid #e0e0e0', padding: '16px 0', margin: '16px 0' }}>
                 {receipt.items?.map((item: any) => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.875rem' }}>
-                    <span>{item.product?.name} x{item.quantity}</span>
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', marginBottom: '8px', fontSize: '0.875rem' }}>
+                    <span>
+                      <span>{item.product?.name || 'Produto'}</span>
+                      <span style={{ marginLeft: '6px', color: '#757575' }}>
+                        x{formatReceiptQuantity(item.quantity)}
+                      </span>
+                    </span>
                     <span>R$ {Number(item.line_total).toFixed(2)}</span>
                   </div>
                 ))}
@@ -478,6 +500,9 @@ export function Sale() {
               <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e0e0e0', color: '#757575', fontSize: '0.75rem' }}>
                 Obrigado pela preferência!
               </div>
+              <Button variant="primary" fullWidth onClick={handlePrintReceipt} style={{ marginTop: '24px' }}>
+                Imprimir Cupom
+              </Button>
             </div>
           </div>
         </Modal>

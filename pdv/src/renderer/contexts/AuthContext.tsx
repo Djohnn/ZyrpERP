@@ -19,6 +19,8 @@ function getToken(): string | null {
 
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('access_token');
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const tid = localStorage.getItem('tenant_id');
   if (tid) headers['X-Tenant-ID'] = tid;
   return headers;
@@ -44,6 +46,25 @@ function clearAuthData() {
   localStorage.removeItem('tenant_id');
   localStorage.removeItem('api_key');
   localStorage.removeItem('cash_session');
+  localStorage.removeItem('stock_location_id');
+}
+
+async function syncPrimaryStockLocation(): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/stock-locations/`, {
+      headers: authHeaders(),
+    });
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const locations = Array.isArray(data) ? data : data.results || (data.id ? [data] : []);
+    const location = locations.find((item: any) => item.is_primary) || locations[0];
+    if (location?.id) {
+      localStorage.setItem('stock_location_id', location.id);
+    }
+  } catch (error) {
+    console.error('Failed to sync stock location:', error);
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -78,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setAuthData(data);
+        await syncPrimaryStockLocation();
         setIsAuthenticated(true);
         setDeviceId(data.device_id);
         setBranchId(data.branch_id ?? null);
@@ -108,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setAuthData(data);
       localStorage.setItem('api_key', apiKey);
+      await syncPrimaryStockLocation();
 
       setIsAuthenticated(true);
       setDeviceId(data.device_id);

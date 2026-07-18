@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCashSession } from '../contexts/CashSessionContext';
 import { Card, Button, Input, Modal } from '../components/ui';
@@ -58,6 +58,7 @@ export function Sale() {
     setShowSearch(false);
     setSearchQuery('');
     setSearchResults([]);
+    const unitPrice = Number(product.price ?? 0);
 
     const existingIndex = items.findIndex(item => item.product.id === product.id);
     if (existingIndex >= 0) {
@@ -75,9 +76,9 @@ export function Sale() {
         product,
         quantity: 1,
         factor: 1,
-        unitPrice: product.price || 0,
+        unitPrice,
         discount: 0,
-        lineTotal: product.price || 0,
+        lineTotal: unitPrice,
       }]);
     }
   };
@@ -234,6 +235,11 @@ export function Sale() {
           <span style={{ fontSize: '0.875rem', color: '#757575' }}>
             {localStorage.getItem('branch_id') ? `Filial: ${localStorage.getItem('branch_id')}` : ''}
           </span>
+          {session.status === 'open' && (
+            <Link to="/cash-session">
+              <Button variant="danger">Fechar Caixa</Button>
+            </Link>
+          )}
           <Button variant="secondary" onClick={() => navigate('/dashboard')}>Dashboard</Button>
         </div>
       </header>

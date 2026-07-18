@@ -43,8 +43,11 @@ class Command(BaseCommand):
 
                 TenantMembership.objects.get_or_create(
                     user=admin_user, tenant=tenant,
-                    defaults={'role': 'admin', 'is_active': True},
+                    defaults={'role': 'operator', 'is_active': True},
                 )
+                TenantMembership.objects.filter(
+                    user=admin_user, tenant=tenant,
+                ).update(role='operator', is_active=True)
 
                 company, _ = Company.objects.get_or_create(
                     tenant=tenant, name='E2E Company',
@@ -67,6 +70,17 @@ class Command(BaseCommand):
                         'registered_by': admin_user,
                     },
                 )
+                device.name = 'E2E Test Device'
+                device.key_hash = key_hash
+                device.branch = branch
+                device.platform = 'e2e'
+                device.app_version = '0.1.0'
+                device.status = 'active'
+                device.registered_by = admin_user
+                device.save(update_fields=[
+                    'name', 'key_hash', 'branch', 'platform', 'app_version',
+                    'status', 'registered_by', 'updated_at',
+                ])
 
                 unit, _ = Unit.objects.get_or_create(
                     tenant=tenant, symbol='UN',
@@ -83,15 +97,24 @@ class Command(BaseCommand):
                         'name': 'Produto E2E',
                         'base_unit': unit,
                         'category': cat,
+                        'ncm': '84713000',
                         'is_active': True,
                     },
                 )
+                product.name = 'Produto E2E'
+                product.base_unit = unit
+                product.category = cat
+                product.ncm = '84713000'
+                product.is_active = True
+                product.save(update_fields=[
+                    'name', 'base_unit', 'category', 'ncm', 'is_active', 'updated_at',
+                ])
 
-                ProductPrice.objects.get_or_create(
+                ProductPrice.objects.update_or_create(
                     tenant=tenant, product=product,
+                    valid_from='2026-01-01T00:00:00Z',
                     defaults={
                         'amount': 49.90,
-                        'valid_from': '2026-01-01T00:00:00Z',
                         'is_active': True,
                     },
                 )

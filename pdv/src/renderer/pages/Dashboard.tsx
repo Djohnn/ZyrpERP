@@ -37,7 +37,7 @@ export function Dashboard() {
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           {session.sessionId ? (
-            <Link to="/cash-session"><Button variant="outline">Gerenciar Caixa</Button></Link>
+            <Link to="/cash-session"><Button variant="danger">Fechar Caixa</Button></Link>
           ) : (
             <Link to="/cash-session"><Button variant="outline">Abrir Caixa</Button></Link>
           )}

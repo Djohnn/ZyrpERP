@@ -29,6 +29,7 @@ function renderLogin() {
 describe('Login', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -56,14 +57,19 @@ describe('Login', () => {
   });
 
   it('shows success message and navigates to dashboard on success', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({
-        token: 'new-token',
-        refresh_token: 'new-refresh',
-        device_id: 'dev-2',
-        branch_id: 'branch-2',
-      }), { status: 200 })
-    );
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({
+          token: 'new-token',
+          refresh_token: 'new-refresh',
+          device_id: 'dev-2',
+          branch_id: 'branch-2',
+          tenant_id: 'tenant-2',
+        }), { status: 200 })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: 'stock-location-2', is_primary: true }), { status: 200 })
+      );
     renderLogin();
     fireEvent.change(screen.getByLabelText('Chave de API (API Key)'), { target: { value: 'valid-key' } });
     await act(async () => {
@@ -74,6 +80,7 @@ describe('Login', () => {
       expect(screen.getByText('Login realizado com sucesso!')).toBeInTheDocument();
     });
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+    expect(localStorage.getItem('stock_location_id')).toBe('stock-location-2');
   });
 
   it('shows default error when API returns no detail field', async () => {

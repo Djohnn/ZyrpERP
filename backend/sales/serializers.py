@@ -105,4 +105,11 @@ class SyncOperationSerializer(serializers.Serializer):
 
 
 class SyncBatchSerializer(serializers.Serializer):
-    operations = SyncOperationSerializer(many=True, min_length=1, max_length=100)
+    operations = SyncOperationSerializer(many=True)
+
+    def validate_operations(self, value):
+        if len(value) < 1:
+            raise serializers.ValidationError('At least one operation is required')
+        if len(value) > 100:
+            raise serializers.ValidationError('No more than 100 operations allowed')
+        return value

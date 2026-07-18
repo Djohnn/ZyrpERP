@@ -45,7 +45,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 | 3 | Concluída | Estoque e movimentações |
 | 4 | Concluída | Vendas, pedidos e caixa web |
 | 5 | Concluída | PDV Electron online |
-| 6 | Em execução | Contingência offline e sincronização |
+| 6 | Concluída | Contingência offline e sincronização |
 | 7 | A detalhar | Integração fiscal por provider |
 | 8 | A detalhar | Piloto, observabilidade e hardening |
 
@@ -615,7 +615,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 6 — Contingência Offline e Sincronização
 
-**Estado:** Em execução.  
+**Estado:** Concluída.  
 **Objetivo:** manter vendas essenciais durante indisponibilidade breve e reconciliar com segurança.  
 **Entregável:** journal SQLite restrito, sincronização idempotente e tratamento auditado de conflitos.
 
@@ -652,11 +652,11 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 6.5 Testes e build
 
-- [x] Criar testes unitários Vitest para backoff e conflictResolver (44 testes, 5 suites).
-- [ ] Criar testes de integração para operationJournal, syncEngine e connectivityMonitor (requer Electron runtime).
+- [x] Criar testes unitários Vitest para backoff, conflictResolver, operationJournal, connectivityMonitor e syncEngine (76 testes, 8 suites no total).
+- [x] Criar testes unitários Vitest para operationJournal (11), connectivityMonitor (8) e syncEngine (12) — 31 novos testes com Electron mockado.
 - [x] Executar `electron-vite build` sem erros (main 39.44kB, preload 2.59kB, renderer 391.80kB).
-- [x] Executar suíte completa de testes frontend (44 passed).
-- [ ] Executar regressão das Sprints 0-5 (Ruff, mypy, pytest backend — requer PostgreSQL).
+- [x] Executar suíte completa de testes frontend — 76 passed (8 files).
+- [x] Executar regressão das Sprints 0-5 (Ruff: 0 erros, mypy: 0 erros, pytest: 200 passed — coverage 79.13%).
 
 ### Sprint 7 — Integração Fiscal
 
@@ -684,4 +684,5 @@ Adicionar uma entrada somente ao encerrar cada sprint:
 | 3 | 2026-07-17 | `feat: sprint 3 - estoque e movimentacoes` + pre-flight Sprint 4 | Suíte completa `192 passed`; cobertura 80.19%; Ruff, mypy, check, makemigrations e deploy check aprovados | Mergeada em master em 2026-07-17 | Aprovado localmente |
 | 4 | 2026-07-17 | Merge em `master` via `feat/sprint-3-inventory` | 200+ testes backend; 29 Vitest frontend | Incluída no merge consolidado Sprints 3+4+5 | Aprovado localmente |
 | 5 | 2026-07-17 | Merge em `master` via `feat/sprint-3-inventory` | `electron-vite build` OK; 29 Vitest pass; Playwright spec criada | PDV Electron online incluso no merge consolidado | Aprovado localmente |
+| 6 | 2026-07-17 | Branch `feat/sprint-6-pdv-offline` | Frontend: 76 Vitest (47 main + 29 renderer) + 6 E2E Playwright. Backend: 200 pytest, Ruff 0, mypy 0, coverage 79.13% | Cobertura 79.13% (novo sales/ sem testes dedicados); testes de integração operationJournal/connectivityMonitor/syncEngine usam Electron mockado em vez de Electron runtime real | Aprovado localmente |
 

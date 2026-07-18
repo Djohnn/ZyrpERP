@@ -4,6 +4,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCashSession } from '../contexts/CashSessionContext';
 import { Card, Button, Input, Modal } from '../components/ui';
 
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('access_token');
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const tid = localStorage.getItem('tenant_id');
+  if (tid) headers['X-Tenant-ID'] = tid;
+  return headers;
+}
+
 export function Sale() {
   const { isAuthenticated } = useAuth();
   const { session } = useCashSession();
@@ -78,7 +87,7 @@ export function Sale() {
     if (query.length >= 2) {
       try {
         const response = await fetch(`/api/v1/products/?search=${encodeURIComponent(query)}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+          headers: authHeaders()
         });
         if (response.ok) {
           const data = await response.json();
@@ -164,7 +173,7 @@ export function Sale() {
     try {
       const itemsPayload = items.map(item => ({
         product: item.product.id,
-        unit: item.product.base_unit?.id,
+        unit: typeof item.product.base_unit === 'object' ? item.product.base_unit?.id : item.product.base_unit,
         quantity: item.quantity.toString(),
         factor: item.factor.toString(),
         discount_amount: item.discount.toFixed(2)
@@ -178,10 +187,7 @@ export function Sale() {
 
       const response = await fetch('/api/v1/sales/counter/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
+        headers: { ...authHeaders(), 'Idempotency-Key': crypto.randomUUID() },
         body: JSON.stringify({
           branch: localStorage.getItem('branch_id'),
           stock_location: localStorage.getItem('stock_location_id'),
@@ -446,7 +452,7 @@ export function Sale() {
             </div>
             <div style={{ fontSize: '0.875rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>Venda</span><strong>#{receipt.id?.slice(0, 8)}</strong>
+                <span>Venda</span><strong>#{String(receipt.id).slice(0, 8)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <span>Data</span><span>{new Date(receipt.created_at).toLocaleString('pt-BR')}</span>
@@ -455,13 +461,13 @@ export function Sale() {
                 {receipt.items?.map((item: any) => (
                   <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.875rem' }}>
                     <span>{item.product?.name} x{item.quantity}</span>
-                    <span>R$ {item.line_total?.toFixed(2)}</span>
+                    <span>R$ {Number(item.line_total).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span>Total</span>
-                <span style={{ fontWeight: 600, color: '#1976d2' }}>R$ {receipt.net_total?.toFixed(2)}</span>
+                <span style={{ fontWeight: 600, color: '#1976d2' }}>R$ {Number(receipt.net_total).toFixed(2)}</span>
               </div>
               <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e0e0e0', color: '#757575', fontSize: '0.75rem' }}>
                 Obrigado pela preferência!

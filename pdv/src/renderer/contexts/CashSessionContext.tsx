@@ -23,6 +23,15 @@ const CashSessionContext = createContext<CashSessionContextType | null>(null);
 
 const API_BASE = '/api/v1';
 
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('access_token');
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const tid = localStorage.getItem('tenant_id');
+  if (tid) headers['X-Tenant-ID'] = tid;
+  return headers;
+}
+
 function defaultSession(): CashSessionState {
   return {
     sessionId: null,
@@ -72,10 +81,7 @@ export function CashSessionProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_BASE}/cash-sessions/open/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
+        headers: authHeaders(),
         body: JSON.stringify({ branch: branchId, opening_amount: openingAmount }),
       });
 
@@ -110,10 +116,7 @@ export function CashSessionProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_BASE}/cash-sessions/${session.sessionId}/close/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
+        headers: authHeaders(),
         body: JSON.stringify({ closing_amount: closingAmount }),
       });
 
@@ -132,7 +135,7 @@ export function CashSessionProvider({ children }: { children: ReactNode }) {
   const getCurrentSession = async (branchId: string) => {
     try {
       const response = await fetch(`${API_BASE}/cash-sessions/current/?branch=${branchId}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
+        headers: authHeaders(),
       });
 
       if (response.ok) {

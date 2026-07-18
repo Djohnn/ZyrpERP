@@ -11,6 +11,17 @@ class TenantMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
+    def _try_jwt_auth(self, request):
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            from tenancy.authentication import DeviceJWTAuthentication
+            try:
+                result = DeviceJWTAuthentication().authenticate(request)
+                if result:
+                    request.user, request.auth = result
+            except Exception:
+                pass
+
     def __call__(self, request):
         tenant = None
         tenant_header = request.headers.get('X-Tenant-ID')
@@ -20,6 +31,9 @@ class TenantMiddleware:
                 tenant_id = uuid.UUID(tenant_header)
             except (TypeError, ValueError, AttributeError):
                 return self._problem(400, 'invalid_tenant', 'X-Tenant-ID must be a UUID.')
+
+            if not request.user.is_authenticated:
+                self._try_jwt_auth(request)
 
             if not request.user.is_authenticated:
                 return self._problem(401, 'authentication_required', 'Authentication is required.')

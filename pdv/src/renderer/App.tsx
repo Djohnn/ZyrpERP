@@ -6,6 +6,7 @@ import { Sale } from './pages/Sale';
 import { CashSession } from './pages/CashSession';
 import { SyncIndicator } from './components/SyncIndicator';
 import { SyncStatusBar } from './components/SyncStatusBar';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -42,14 +43,16 @@ export function App() {
         path="/*"
         element={
           <PrivateRoute>
-            <AppLayout>
-              <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/sale" element={<Sale />} />
-                <Route path="/cash-session" element={<CashSession />} />
-              </Routes>
-            </AppLayout>
+            <ErrorBoundary>
+              <AppLayout>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/sale" element={<Sale />} />
+                  <Route path="/cash-session" element={<CashSession />} />
+                </Routes>
+              </AppLayout>
+            </ErrorBoundary>
           </PrivateRoute>
         }
       />

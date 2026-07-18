@@ -17,11 +17,23 @@ function getToken(): string | null {
   return localStorage.getItem('access_token');
 }
 
-function setAuthData(data: { token: string; refresh_token: string; device_id: string; branch_id?: string }) {
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const tid = localStorage.getItem('tenant_id');
+  if (tid) headers['X-Tenant-ID'] = tid;
+  return headers;
+}
+
+function simpleHeaders(): Record<string, string> {
+  return { 'Content-Type': 'application/json' };
+}
+
+function setAuthData(data: { token: string; refresh_token: string; device_id: string; branch_id?: string; tenant_id?: string }) {
   localStorage.setItem('access_token', data.token);
   localStorage.setItem('refresh_token', data.refresh_token);
   localStorage.setItem('device_id', data.device_id);
   localStorage.setItem('branch_id', data.branch_id ?? '');
+  localStorage.setItem('tenant_id', data.tenant_id ?? '');
 }
 
 function clearAuthData() {
@@ -29,6 +41,7 @@ function clearAuthData() {
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('device_id');
   localStorage.removeItem('branch_id');
+  localStorage.removeItem('tenant_id');
   localStorage.removeItem('api_key');
   localStorage.removeItem('cash_session');
 }
@@ -58,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const response = await fetch(`${API_BASE}/devices/validate/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: simpleHeaders(),
         body: JSON.stringify({ api_key: apiKey }),
       });
 
@@ -83,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_BASE}/devices/validate/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: simpleHeaders(),
         body: JSON.stringify({ api_key: apiKey }),
       });
 
@@ -120,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_BASE}/devices/refresh/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ refresh_token: refreshToken }),
       });
 

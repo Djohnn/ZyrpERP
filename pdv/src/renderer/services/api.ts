@@ -14,6 +14,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const tid = localStorage.getItem('tenant_id');
+    if (tid) {
+      config.headers['X-Tenant-ID'] = tid;
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -31,9 +35,12 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refresh_token');
         if (!refreshToken) throw new Error('No refresh token');
 
+        const refreshHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        const tid = localStorage.getItem('tenant_id');
+        if (tid) refreshHeaders['X-Tenant-ID'] = tid;
         const response = await fetch(`${API_BASE_URL}/devices/refresh/`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: refreshHeaders,
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
 

@@ -1,7 +1,7 @@
 import hashlib
 
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
@@ -70,22 +70,20 @@ class DeviceRegisterView(generics.CreateAPIView):
 
 
 class DeviceValidateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = DeviceValidateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         api_key = serializer.validated_data['api_key']
 
-        # For now, we'll validate against a placeholder
-        # In production, this would hash the key and compare
         from django.db import connection
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT id, key_hash, branch_id, status "
+                "SELECT id, tenant_id, branch_id, status "
                 "FROM tenancy_device "
-                "WHERE key_hash = %s AND tenant_id = %s",
-                [hashlib.sha256(api_key.encode()).hexdigest(), str(request.tenant.id)]
+                "WHERE key_hash = %s",
+                [hashlib.sha256(api_key.encode()).hexdigest()]
             )
             row = cursor.fetchone()
 
@@ -96,7 +94,7 @@ class DeviceValidateView(APIView):
                 content_type='application/problem+json'
             )
 
-        device_id, key_hash, branch_id, device_status = row
+        device_id, tenant_id, branch_id, device_status = row
 
         if device_status != 'active':
             return Response(
@@ -109,13 +107,14 @@ class DeviceValidateView(APIView):
         refresh = RefreshToken()
         refresh['device_id'] = str(device_id)
         refresh['branch_id'] = str(branch_id) if branch_id else None
-        refresh['tenant_id'] = str(request.tenant.id)
+        refresh['tenant_id'] = str(tenant_id)
 
         return Response({
             'token': str(refresh.access_token),
             'refresh_token': str(refresh),
             'device_id': str(device_id),
             'branch_id': str(branch_id) if branch_id else None,
+            'tenant_id': str(tenant_id),
         })
 
 

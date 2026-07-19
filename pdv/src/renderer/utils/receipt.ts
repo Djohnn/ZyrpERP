@@ -26,7 +26,14 @@ export interface ReceiptData {
   items?: ReceiptItem[];
 }
 
-export function buildReceiptHtml(saleReceipt: ReceiptData): string {
+export function buildReceiptHtml(
+  saleReceipt: ReceiptData,
+  fiscalInfo?: {
+    fiscalStatus?: string;
+    protocolo?: string;
+    chaveAcesso?: string;
+  },
+): string {
   const saleNumber = String(saleReceipt.id).slice(0, 8);
   const itemsHtml = (saleReceipt.items || []).map((item: ReceiptItem) => {
     const productName =
@@ -44,11 +51,18 @@ export function buildReceiptHtml(saleReceipt: ReceiptData): string {
     `;
   }).join('');
 
+  const fiscalBlock = fiscalInfo?.fiscalStatus === 'autorizado' ? `
+    <div style="text-align:center;margin-top:3mm;padding-top:2mm;border-top:1px dashed #000;font-size:9px">
+      <p style="margin:1mm 0"><strong>Protocolo:</strong> ${fiscalInfo.protocolo || '-'}</p>
+      <p style="margin:1mm 0"><strong>Chave de Acesso:</strong> ${escapeHtml(fiscalInfo.chaveAcesso || '-')}</p>
+      <p style="margin-top:2mm;color:#666">Consulte em https://www.sefaz.gov.br/consulta</p>
+    </div>` : '';
+
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <title>Zyrp PDV - Cupom N&atilde;o Fiscal #${escapeHtml(saleNumber)}</title>
+  <title>Zyrp PDV - Cupom${fiscalInfo ? ' Fiscal' : ' N\u00e3o Fiscal'} #${escapeHtml(saleNumber)}</title>
   <style>
     * { box-sizing: border-box; }
     @page { size: 80mm auto; margin: 0; }
@@ -70,12 +84,13 @@ export function buildReceiptHtml(saleReceipt: ReceiptData): string {
 <body>
   <main class="receipt">
     <h1>Zyrp PDV</h1>
-    <p class="subtitle">Cupom N&atilde;o Fiscal</p>
+    <p class="subtitle">${fiscalInfo ? 'Cupom Fiscal' : 'Cupom N\u00e3o Fiscal'}</p>
     <div class="line"><span>Venda</span><strong>#${escapeHtml(saleNumber)}</strong></div>
     <div class="line"><span>Data</span><span>${escapeHtml(new Date(saleReceipt.created_at).toLocaleString('pt-BR'))}</span></div>
     <section class="items">${itemsHtml}</section>
     <div class="line total"><span>Total</span><span>R$ ${Number(saleReceipt.net_total).toFixed(2)}</span></div>
-    <p class="thanks">Obrigado pela prefer&ecirc;ncia!</p>
+    ${fiscalBlock}
+    <p class="thanks">Obrigado pela prefer\u00eancia!</p>
   </main>
 </body>
 </html>`;

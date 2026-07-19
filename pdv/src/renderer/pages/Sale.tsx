@@ -298,19 +298,63 @@ const paymentsPayload = payments.map(p => ({
 
   const handlePrintFiscal = async () => {
     if (!confirmationSale) return;
-    const html = buildReceiptHtml(confirmationSale.data);
-    const fileName = `cupom_fiscal_${confirmationSale.saleNumber}`;
-    const electronAPI = (window as any).electronAPI;
-    if (electronAPI?.printFiscalReceipt) {
-      await electronAPI.printFiscalReceipt({ html, fileName });
-    } else if (electronAPI?.printReceipt) {
-      await electronAPI.printReceipt({ html, fileName });
-    } else {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.print();
+    setProcessing(true);
+
+    const saleId = confirmationSale.id;
+    const headers = authHeaders();
+
+    try {
+      // Check if fiscal document already exists and is authorized
+      const statusResponse = await fetch(`/api/v1/fiscal/sales/${saleId}/fiscal-status/`, { headers });
+
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        if (statusData.fiscal_status === 'CONCLUDED') {
+          // Already authorized — print directly with protocol/chave
+          const html = buildReceiptHtml(confirmationSale.data, {
+            fiscalStatus: 'autorizado',
+            protocolo: statusData.protocol,
+            chaveAcesso: statusData.xml_url || '',
+          });
+          const fileName = `cupom_fiscal_${confirmationSale.saleNumber}`;
+          const electronAPI = (window as any).electronAPI;
+          if (electronAPI?.printFiscalReceipt) {
+            await electronAPI.printFiscalReceipt({ html, fileName });
+          } else if (electronAPI?.printReceipt) {
+            await electronAPI.printReceipt({ html, fileName });
+          }
+          setConfirmationSale(null);
+          return;
+        }
+
+        if (statusData.fiscal_status === 'PENDING' || statusData.fiscal_status === 'PROCESSING') {
+          setError('Emissão fiscal já está em processamento. Verifique o status no histórico.');
+          return;
+        }
+
+        if (statusData.fiscal_status === 'REJECTED') {
+          setError(`Emissão fiscal foi rejeitada: ${statusData.error_detail}. Tente novamente no histórico.`);
+          return;
+        }
       }
+
+      // No existing doc or not authorized — request new emission
+      const requestResponse = await fetch(`/api/v1/fiscal/sales/${saleId}/request-fiscal/`, {
+        method: 'POST',
+        headers: { ...headers, 'Idempotency-Key': crypto.randomUUID() },
+      });
+
+      if (requestResponse.status === 201) {
+        setConfirmationSale(null);
+        setError('');
+      } else {
+        const errData = await requestResponse.json();
+        setError(errData.detail || 'Erro ao solicitar emissão fiscal.');
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Erro de rede ao solicitar emissão fiscal.');
+    } finally {
+      setProcessing(false);
     }
   };
 

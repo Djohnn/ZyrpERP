@@ -147,3 +147,106 @@ def test_fiscal_webhook_queries_provider_instead_of_trusting_body(
     assert doc.status == 'CONCLUDED'
     assert doc.protocol == 'real-protocol'
     assert doc.webhook_received_at is not None
+
+
+@pytest.mark.django_db
+def test_request_fiscal_creates_document(monkeypatch, client, fiscal_sale_context):
+    from fiscal.models import FiscalDocument
+    from fiscal.ports import EmitResult
+
+    ctx = fiscal_sale_context
+    client.force_login(ctx['user'])
+    session = client.session
+    session['mfa_tenant_id'] = str(ctx['tenant'].id)
+    session['mfa_method'] = 'totp'
+    session.save()
+
+    def fake_emit(self, tenant, emitter, document, items, payments):
+        return EmitResult(provider_document_id='nfce-test-001', raw_response={})
+
+    monkeypatch.setattr('fiscal.adapters.plugnotas.PlugNotasAdapter.emit', fake_emit)
+
+    response = client.post(
+        f'/api/v1/sales/{ctx["sale"].id}/request-fiscal/',
+        HTTP_X_TENANT_ID=str(ctx['tenant'].id),
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data['fiscal_status'] in ('PENDING', 'PROCESSING')
+
+    doc = FiscalDocument.all_objects.filter(sale=ctx['sale'], is_active=True).first()
+    assert doc is not None
+
+
+@pytest.mark.django_db
+def test_request_fiscal_returns_existing_document(client, fiscal_sale_context):
+    from fiscal.models import FiscalDocument
+    from fiscal.services import emit_nfce
+
+    ctx = fiscal_sale_context
+    client.force_login(ctx['user'])
+    session = client.session
+    session['mfa_tenant_id'] = str(ctx['tenant'].id)
+    session['mfa_method'] = 'totp'
+    session.save()
+
+    doc = emit_nfce(ctx['sale'], ctx['tenant'])
+
+    response = client.post(
+        f'/api/v1/sales/{ctx["sale"].id}/request-fiscal/',
+        HTTP_X_TENANT_ID=str(ctx['tenant'].id),
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data['attempt'] == doc.attempt_number
+
+
+@pytest.mark.django_db
+def test_request_fiscal_404_for_nonexistent_sale(client, fiscal_sale_context):
+    import uuid
+    ctx = fiscal_sale_context
+    client.force_login(ctx['user'])
+    session = client.session
+    session['mfa_tenant_id'] = str(ctx['tenant'].id)
+    session['mfa_method'] = 'totp'
+    session.save()
+
+    response = client.post(
+        f'/api/v1/sales/{uuid.uuid4()}/request-fiscal/',
+        HTTP_X_TENANT_ID=str(ctx['tenant'].id),
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_fiscal_config_returns_true_when_emitter_exists(client, fiscal_sale_context):
+    ctx = fiscal_sale_context
+    client.force_login(ctx['user'])
+
+    response = client.get(
+        f'/api/v1/fiscal/config/?branch={ctx["branch"].id}',
+        HTTP_X_TENANT_ID=str(ctx['tenant'].id),
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data['has_fiscal_config'] is True
+    assert data['emitter_id'] is not None
+
+
+@pytest.mark.django_db
+def test_fiscal_config_returns_false_when_no_emitter(client, fiscal_sale_context):
+    from fiscal.models import FiscalEmitter
+
+    ctx = fiscal_sale_context
+    client.force_login(ctx['user'])
+
+    FiscalEmitter.all_objects.filter(branch=ctx['branch']).update(is_active=False)
+
+    response = client.get(
+        f'/api/v1/fiscal/config/?branch={ctx["branch"].id}',
+        HTTP_X_TENANT_ID=str(ctx['tenant'].id),
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data['has_fiscal_config'] is False
+    assert data['emitter_id'] is None

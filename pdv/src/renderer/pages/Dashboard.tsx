@@ -24,6 +24,7 @@ export function Dashboard() {
   const [menuSaleId, setMenuSaleId] = useState<string | null>(null);
   const [reprinting, setReprinting] = useState<string | null>(null);
   const [reprintMessage, setReprintMessage] = useState<string>('');
+  const [fiscalStatuses, setFiscalStatuses] = useState<Record<string, any>>({});
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const loadRecentSales = async () => {
@@ -73,6 +74,30 @@ export function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuSaleId]);
 
+  useEffect(() => {
+    if (!recentSales.length) return;
+    const fetchStatuses = async () => {
+      const headers = authHeaders();
+      const results: Record<string, any> = {};
+      const batch = recentSales.slice(0, 20);
+      await Promise.all(
+        batch.map(async (sale: any) => {
+          try {
+            const resp = await fetch(`/api/v1/fiscal/sales/${sale.id}/fiscal-status/`, { headers });
+            if (resp.ok) {
+              const data = await resp.json();
+              results[sale.id] = data;
+            }
+          } catch {
+            // ignore network errors
+          }
+        }),
+      );
+      setFiscalStatuses(results);
+    };
+    fetchStatuses();
+  }, [recentSales]);
+
   const handleReprint = useCallback(async (saleId: string, type: 'fiscal' | 'balcao') => {
     setMenuSaleId(null);
     setReprinting(saleId);
@@ -97,9 +122,29 @@ export function Dashboard() {
         }),
       );
 
-      const html = buildReceiptHtml({ ...sale, items: itemsWithNames });
+      let html: string;
       const label = type === 'fiscal' ? 'fiscal' : 'balcao';
       const fileName = `cupom_${label}_${String(sale.id).slice(0, 8)}`;
+
+      if (type === 'fiscal') {
+        let fiscalInfo = {};
+        try {
+          const statusResp = await fetch(`/api/v1/fiscal/sales/${saleId}/fiscal-status/`, { headers: authHeaders() });
+          if (statusResp.ok) {
+            const statusData = await statusResp.json();
+            if (statusData.fiscal_status === 'CONCLUDED') {
+              fiscalInfo = {
+                fiscalStatus: 'autorizado',
+                protocolo: statusData.protocol,
+                chaveAcesso: statusData.xml_url || '',
+              };
+            }
+          }
+        } catch { /* ignore */ }
+        html = buildReceiptHtml({ ...sale, items: itemsWithNames }, fiscalInfo);
+      } else {
+        html = buildReceiptHtml({ ...sale, items: itemsWithNames });
+      }
 
       const printFn = type === 'fiscal'
         ? electronAPI.printFiscalReceipt
@@ -116,6 +161,25 @@ export function Dashboard() {
       setReprintMessage(`Erro: ${e instanceof Error ? e.message : 'falha desconhecida'}`);
     } finally {
       setReprinting(null);
+    }
+  }, []);
+
+  const handleRequestFiscal = useCallback(async (saleId: string) => {
+    setMenuSaleId(null);
+    setReprintMessage('');
+    try {
+      const resp = await fetch(`/api/v1/fiscal/sales/${saleId}/request-fiscal/`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Idempotency-Key': crypto.randomUUID() },
+      });
+      if (resp.status === 201) {
+        setReprintMessage('✅ Emissão fiscal solicitada com sucesso!');
+      } else {
+        const err = await resp.json();
+        setReprintMessage(`❌ ${err.detail || 'Erro ao solicitar emissão fiscal.'}`);
+      }
+    } catch (error) {
+      setReprintMessage('❌ Erro de rede ao solicitar emissão fiscal.');
     }
   }, []);
 
@@ -220,7 +284,26 @@ export function Dashboard() {
               <tbody>
                 {recentSales.slice(0, 5).map((sale: any) => (
                   <tr key={sale.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                    <td style={{ padding: '12px 16px', fontSize: '0.875rem' }}>#{sale.id.slice(0, 8)}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '0.875rem' }}>
+                        #{sale.id.slice(0, 8)}
+                        {fiscalStatuses[sale.id] && (
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: '10px',
+                            fontSize: '0.65rem',
+                            fontWeight: 600,
+                            marginLeft: '8px',
+                            backgroundColor: fiscalStatuses[sale.id].fiscal_status === 'CONCLUDED' ? '#e8f5e9' :
+                                             fiscalStatuses[sale.id].fiscal_status === 'REJECTED' ? '#fce4ec' : '#fff3e0',
+                            color: fiscalStatuses[sale.id].fiscal_status === 'CONCLUDED' ? '#2e7d32' :
+                                   fiscalStatuses[sale.id].fiscal_status === 'REJECTED' ? '#c62828' : '#e65100',
+                          }}>
+                            {fiscalStatuses[sale.id].fiscal_status === 'CONCLUDED' ? 'NFC-e' :
+                             fiscalStatuses[sale.id].fiscal_status === 'REJECTED' ? 'Rejeitado' : 'Pendente'}
+                          </span>
+                        )}
+                    </td>
                     <td style={{ padding: '12px 16px', fontSize: '0.875rem' }}>{sale.customer || 'Consumidor final'}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600 }} data-testid={`sale-total-${sale.id}`}>{sale.net_total}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'center' }}>
@@ -278,23 +361,6 @@ export function Dashboard() {
                         >
                           <button
                             type="button"
-                            onClick={() => handleReprint(sale.id, 'fiscal')}
-                            style={{
-                              display: 'block',
-                              width: '100%',
-                              padding: '12px 16px',
-                              background: 'none',
-                              border: 'none',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              fontSize: '0.875rem',
-                              color: '#1976d2',
-                            }}
-                          >
-                            Reimprimir Cupom Fiscal
-                          </button>
-                          <button
-                            type="button"
                             onClick={() => handleReprint(sale.id, 'balcao')}
                             style={{
                               display: 'block',
@@ -310,6 +376,98 @@ export function Dashboard() {
                           >
                             Reimprimir Cupom Balcão
                           </button>
+                          {fiscalStatuses[sale.id]?.fiscal_status === 'CONCLUDED' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleReprint(sale.id, 'fiscal')}
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '12px 16px',
+                                background: 'none',
+                                border: 'none',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                color: '#1976d2',
+                              }}
+                            >
+                              Reimprimir Cupom Fiscal
+                            </button>
+                          ) : fiscalStatuses[sale.id]?.fiscal_status === 'PENDING' || fiscalStatuses[sale.id]?.fiscal_status === 'PROCESSING' ? (
+                            <button
+                              type="button"
+                              disabled
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '12px 16px',
+                                background: 'none',
+                                border: 'none',
+                                textAlign: 'left',
+                                fontSize: '0.875rem',
+                                color: '#9e9e9e',
+                                cursor: 'not-allowed',
+                              }}
+                            >
+                              Emissão NFC-e em andamento...
+                            </button>
+                          ) : fiscalStatuses[sale.id]?.fiscal_status === 'REJECTED' ? (
+                            <>
+                              <button
+                                type="button"
+                                disabled
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '12px 16px',
+                                  background: 'none',
+                                  border: 'none',
+                                  textAlign: 'left',
+                                  fontSize: '0.875rem',
+                                  color: '#c62828',
+                                  cursor: 'not-allowed',
+                                }}
+                              >
+                                NFC-e rejeitada: {fiscalStatuses[sale.id]?.error_detail}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRequestFiscal(sale.id)}
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '12px 16px',
+                                  background: 'none',
+                                  border: 'none',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                  fontSize: '0.875rem',
+                                  color: '#1976d2',
+                                }}
+                              >
+                                Tentar novamente
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleRequestFiscal(sale.id)}
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '12px 16px',
+                                background: 'none',
+                                border: 'none',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                color: '#1976d2',
+                              }}
+                            >
+                              Solicitar Cupom Fiscal
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>

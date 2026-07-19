@@ -721,7 +721,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 8 — Piloto, Observabilidade e Hardening
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-19.
 **Objetivo:** preparar um piloto controlado com segurança, operação, suporte e recuperação verificáveis.  
 **Entregável:** release candidata com SLOs iniciais, alertas, backup restaurado, runbooks e critérios de rollback.
 
@@ -731,37 +731,37 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 8.1 Checklist de piloto
 
-- [ ] Criar checklist de readiness do piloto.
-- [ ] Registrar responsáveis por Produto, Engenharia e Suporte.
-- [ ] Definir critérios objetivos de entrada e saída do piloto.
+- [x] Criar checklist de readiness do piloto.
+- [x] Registrar responsáveis por Produto, Engenharia e Suporte.
+- [x] Definir critérios objetivos de entrada e saída do piloto.
 
 #### 8.2 Health, readiness e smoke tests
 
-- [ ] Expor readiness com banco, Redis/cache e Outbox.
-- [ ] Criar smoke test backend.
-- [ ] Criar smoke test PDV/frontend.
-- [ ] Garantir correlation ID nas respostas críticas.
+- [x] Expor readiness com banco, Redis/cache e Outbox.
+- [x] Criar smoke test backend.
+- [x] Criar smoke test PDV/frontend.
+- [x] Garantir correlation ID nas respostas críticas.
 
 #### 8.3 Métricas, dashboards e alertas
 
-- [ ] Documentar painéis de API, Outbox, fiscal, PDV offline e dependências.
-- [ ] Implementar ou expor helpers de métricas seguras.
-- [ ] Definir thresholds iniciais como baseline de piloto.
+- [x] Documentar painéis de API, Outbox, fiscal, PDV offline e dependências.
+- [x] Implementar ou expor helpers de métricas seguras.
+- [x] Definir thresholds iniciais como baseline de piloto.
 
 #### 8.4 Backup, restore e runbooks
 
-- [ ] Criar script de backup sem segredos embutidos.
-- [ ] Criar script de restore verificável em ambiente descartável.
-- [ ] Criar runbook de backup/restore.
-- [ ] Criar runbook de incidentes SEV-1 a SEV-4.
-- [ ] Criar runbook de rollback.
+- [x] Criar script de backup sem segredos embutidos.
+- [x] Criar script de restore verificável em ambiente descartável.
+- [x] Criar runbook de backup/restore.
+- [x] Criar runbook de incidentes SEV-1 a SEV-4.
+- [x] Criar runbook de rollback.
 
 #### 8.5 Segurança e aceite
 
-- [ ] Executar scanner/grep de segredos.
-- [ ] Executar suíte backend, frontend/PDV disponível, Ruff, mypy e checks Django.
-- [ ] Registrar evidências no relatório final da Sprint 8.
-- [ ] Criar commit final `chore: sprint 8 - piloto observabilidade hardening`.
+- [x] Executar scanner/grep de segredos.
+- [x] Executar suíte backend, frontend/PDV disponível, Ruff, mypy e checks Django.
+- [x] Registrar evidências no relatório final da Sprint 8.
+- [x] Criar commit final `chore: sprint 8 - piloto observabilidade hardening`.
 
 ### Sprint 9 — Devoluções, Cancelamentos e Estornos
 

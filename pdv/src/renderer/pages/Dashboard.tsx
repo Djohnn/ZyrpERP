@@ -1,14 +1,52 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCashSession } from '../contexts/CashSessionContext';
 import { Card, Button, CardHeader, CardContent, EmptyState, Spinner } from '../components/ui';
+import { buildReceiptHtml } from '../utils/receipt';
+
+const API_BASE = '/api/v1';
+
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('access_token');
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const tenantId = localStorage.getItem('tenant_id');
+  if (tenantId) headers['X-Tenant-ID'] = tenantId;
+  return headers;
+}
 
 export function Dashboard() {
   const { isAuthenticated, deviceId, branchId } = useAuth();
   const { session, refreshSession } = useCashSession();
   const [loading, setLoading] = useState(true);
   const [recentSales, setRecentSales] = useState<any[]>([]);
+  const [menuSaleId, setMenuSaleId] = useState<string | null>(null);
+  const [reprinting, setReprinting] = useState<string | null>(null);
+  const [reprintMessage, setReprintMessage] = useState<string>('');
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const loadRecentSales = async () => {
+    if (!branchId || !session.sessionId) {
+      setRecentSales([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/sales/?branch=${branchId}&cash_session=${session.sessionId}`,
+        { headers: authHeaders() },
+      );
+      if (!response.ok) {
+        setRecentSales([]);
+        return;
+      }
+      const data = await response.json();
+      setRecentSales(Array.isArray(data) ? data : data.results ?? []);
+    } catch {
+      setRecentSales([]);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -16,6 +54,64 @@ export function Dashboard() {
       setLoading(false);
     };
     init();
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      loadRecentSales();
+    }
+  }, [loading, branchId, session.sessionId]);
+
+  useEffect(() => {
+    if (!menuSaleId) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuSaleId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuSaleId]);
+
+  const handleReprint = useCallback(async (saleId: string) => {
+    setMenuSaleId(null);
+    setReprinting(saleId);
+    setReprintMessage('');
+    try {
+      const electronAPI = (window as any).electronAPI;
+      const detailResult = await electronAPI.getSaleDetail(saleId);
+      if (!detailResult?.success) {
+        setReprintMessage(`Erro ao buscar venda: ${detailResult?.error || 'falha desconhecida'}`);
+        return;
+      }
+      const sale = detailResult.data;
+
+      // Enrich items with product names (SaleSerializer only returns product UUID)
+      const itemsWithNames = await Promise.all(
+        (sale.items || []).map(async (item: any) => {
+          if (typeof item.product === 'object' && item.product?.name) return item;
+          const productResult = await electronAPI.getProduct(item.product);
+          return {
+            ...item,
+            product: { name: productResult?.success ? productResult.data?.name : 'Produto' },
+          };
+        }),
+      );
+
+      const html = buildReceiptHtml({ ...sale, items: itemsWithNames });
+      const fileName = `cupom_nao_fiscal_${String(sale.id).slice(0, 8)}`;
+
+      const printResult = await electronAPI.printReceipt({ html, fileName });
+      if (printResult?.success) {
+        setReprintMessage(`Cupom reimpresso e salvo em: ${printResult.savedPath}`);
+      } else {
+        setReprintMessage(`Falha na impressão: ${printResult?.error || 'erro desconhecido'}`);
+      }
+    } catch (e) {
+      setReprintMessage(`Erro: ${e instanceof Error ? e.message : 'falha desconhecida'}`);
+    } finally {
+      setReprinting(null);
+    }
   }, []);
 
   if (loading) {
@@ -37,7 +133,7 @@ export function Dashboard() {
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           {session.sessionId ? (
-            <Link to="/cash-session"><Button variant="outline">Gerenciar Caixa</Button></Link>
+            <Link to="/cash-session"><Button variant="danger">Fechar Caixa</Button></Link>
           ) : (
             <Link to="/cash-session"><Button variant="outline">Abrir Caixa</Button></Link>
           )}
@@ -86,6 +182,23 @@ export function Dashboard() {
           <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Vendas Recentes</h2>
         </div>
 
+        {reprintMessage && (
+          <div
+            role="status"
+            data-testid="reprint-message"
+            style={{
+              padding: '12px 16px',
+              marginBottom: '12px',
+              borderRadius: '8px',
+              background: reprintMessage.startsWith('Erro') || reprintMessage.startsWith('Falha') ? '#fce4ec' : '#e8f5e9',
+              color: reprintMessage.startsWith('Erro') || reprintMessage.startsWith('Falha') ? '#c62828' : '#2e7d32',
+              fontSize: '0.875rem',
+            }}
+          >
+            {reprintMessage}
+          </div>
+        )}
+
         {recentSales.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -96,6 +209,7 @@ export function Dashboard() {
                   <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, fontSize: '0.75rem', color: '#757575', textTransform: 'uppercase' }}>Total</th>
                   <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#757575', textTransform: 'uppercase' }}>Status</th>
                   <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: '0.75rem', color: '#757575', textTransform: 'uppercase' }}>Hora</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#757575', textTransform: 'uppercase' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,7 +217,7 @@ export function Dashboard() {
                   <tr key={sale.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
                     <td style={{ padding: '12px 16px', fontSize: '0.875rem' }}>#{sale.id.slice(0, 8)}</td>
                     <td style={{ padding: '12px 16px', fontSize: '0.875rem' }}>{sale.customer || 'Consumidor final'}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600 }}>{sale.net_total}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600 }} data-testid={`sale-total-${sale.id}`}>{sale.net_total}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                       <span style={{
                         padding: '4px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 500,
@@ -115,6 +229,67 @@ export function Dashboard() {
                     </td>
                     <td style={{ padding: '12px 16px', fontSize: '0.875rem', color: '#757575' }}>
                       {new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td style={{ padding: '12px 16px', textAlign: 'center', position: 'relative' }}>
+                      <button
+                        type="button"
+                        aria-label={`Ações da venda ${sale.id.slice(0, 8)}`}
+                        data-testid={`sale-actions-${sale.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuSaleId(menuSaleId === sale.id ? null : sale.id);
+                        }}
+                        disabled={reprinting === sale.id}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: reprinting === sale.id ? 'wait' : 'pointer',
+                          padding: '4px 8px',
+                          fontSize: '1rem',
+                          color: '#757575',
+                          borderRadius: '4px',
+                          lineHeight: 1,
+                        }}
+                        title={reprinting === sale.id ? 'Reimprimindo...' : 'Mais ações'}
+                      >
+                        {reprinting === sale.id ? '...' : '⋮'}
+                      </button>
+                      {menuSaleId === sale.id && (
+                        <div
+                          ref={menuRef}
+                          data-testid={`sale-menu-${sale.id}`}
+                          style={{
+                            position: 'absolute',
+                            right: '16px',
+                            top: '40px',
+                            zIndex: 50,
+                            background: '#fff',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            minWidth: '180px',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleReprint(sale.id)}
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              padding: '12px 16px',
+                              background: 'none',
+                              border: 'none',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '0.875rem',
+                              color: '#1976d2',
+                            }}
+                          >
+                            🖶 Reimprimir Cupom
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

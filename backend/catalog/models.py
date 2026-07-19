@@ -93,6 +93,7 @@ class Product(TimeStampedModel, TenantScopedModel):
     base_unit = models.ForeignKey(Unit, on_delete=models.PROTECT)
     requires_lot = models.BooleanField(default=False)
     requires_expiry = models.BooleanField(default=False)
+    ncm = models.CharField(max_length=8, blank=True, default='')
     is_active = models.BooleanField(default=True)
     version = models.PositiveIntegerField(default=1)
 

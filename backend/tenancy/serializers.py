@@ -31,10 +31,11 @@ class DeviceRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
         fields = ['name', 'device_id', 'branch', 'platform', 'app_version', 'os_version']
+        extra_kwargs = {'device_id': {'required': False, 'allow_blank': True}}
 
     def create(self, validated_data):
         # Generate a device ID if not provided
-        if 'device_id' not in validated_data:
+        if not validated_data.get('device_id'):
             validated_data['device_id'] = f"pdv_{get_random_string(12)}"
         validated_data['tenant'] = self.context['request'].tenant
         validated_data['registered_by'] = self.context['request'].user

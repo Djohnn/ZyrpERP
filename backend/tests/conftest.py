@@ -42,26 +42,15 @@ def django_db_setup(django_db_blocker):
         port=database['PORT'],
         connect_timeout=5,
     )
-    with conn.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT tablename
-            FROM pg_tables
-            WHERE schemaname = 'public'
-              AND tablename <> 'django_migrations'
-            ORDER BY tablename
-            """
+    if not (database['NAME'].startswith('test_') or database['NAME'].endswith('_test')):
+        raise RuntimeError(
+            f"Refusing to reset non-test database schema: {database['NAME']}"
         )
-        tables = [row[0] for row in cursor.fetchall()]
-        if tables:
-            cursor.execute(
-                sql.SQL('TRUNCATE TABLE {} RESTART IDENTITY CASCADE').format(
-                    sql.SQL(', ').join(
-                        sql.Identifier('public', table) for table in tables
-                    )
-                )
-            )
-        cursor.execute(sql.SQL('GRANT USAGE ON SCHEMA public TO {}').format(
+
+    with conn.cursor() as cursor:
+        cursor.execute('DROP SCHEMA IF EXISTS public CASCADE')
+        cursor.execute('CREATE SCHEMA public')
+        cursor.execute(sql.SQL('GRANT USAGE, CREATE ON SCHEMA public TO {}').format(
             sql.Identifier(runtime_user),
         ))
         cursor.execute(sql.SQL(
@@ -233,3 +222,98 @@ def inv_branch(inv_company, inv_tenant):
             name='InvBranch',
         )[0],
     )
+
+
+@pytest.fixture
+def fiscal_sale_context(django_user_model):
+    from decimal import Decimal
+
+    from django.utils import timezone
+
+    from catalog.models import Product, ProductPrice, Unit
+    from inventory.models import StockLocation
+    from inventory.services import create_receipt
+    from sales.services import create_counter_sale, open_cash_session
+
+    tenant = Tenant.objects.create(name='Fiscal Shared Tenant', slug='fiscal-shared')
+    user = django_user_model.objects.create_user(
+        email='fiscal-shared@test.local',
+        password='pass123',
+    )
+    TenantMembership.objects.create(user=user, tenant=tenant, role='admin', is_active=True)
+
+    def _create():
+        unit = Unit.all_objects.create(tenant=tenant, symbol='UN', name='Unidade')
+        product = Product.all_objects.create(
+            tenant=tenant,
+            sku='FISCAL-SHARED',
+            name='Produto Fiscal',
+            base_unit=unit,
+            ncm='12345678',
+        )
+        ProductPrice.all_objects.create(
+            tenant=tenant,
+            product=product,
+            amount=Decimal('10.00'),
+            valid_from=timezone.now(),
+        )
+        company = Company.all_objects.create(
+            tenant=tenant,
+            name='Empresa Fiscal',
+            cnpj='12345678000199',
+        )
+        branch = Branch.all_objects.create(
+            tenant=tenant,
+            company=company,
+            name='Filial Fiscal',
+        )
+        location = StockLocation.all_objects.create(
+            tenant=tenant,
+            branch=branch,
+            code='FISCAL',
+            name='Fiscal',
+            is_primary=True,
+        )
+        create_receipt(
+            tenant,
+            branch,
+            product,
+            location,
+            Decimal('5'),
+            unit,
+            Decimal('1'),
+            idempotency_key='fiscal-shared-stock',
+            actor=user,
+            reason='seed fiscal stock',
+        )
+        open_cash_session(
+            tenant=tenant,
+            branch=branch,
+            operator=user,
+            opening_amount=Decimal('0'),
+            idempotency_key='fiscal-shared-cash-open',
+        )
+        sale = create_counter_sale(
+            tenant=tenant,
+            branch=branch,
+            operator=user,
+            stock_location=location,
+            items=[{
+                'product': product,
+                'unit': unit,
+                'quantity': Decimal('1'),
+                'factor': Decimal('1'),
+            }],
+            payments=[{'method': 'cash', 'amount': Decimal('10.00')}],
+            idempotency_key='fiscal-shared-sale',
+        )
+        return {
+            'tenant': tenant,
+            'user': user,
+            'unit': unit,
+            'product': product,
+            'branch': branch,
+            'sale': sale,
+        }
+
+    return _run_in_tenant(tenant, _create)

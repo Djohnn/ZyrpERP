@@ -1,4 +1,6 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework import serializers
 
 from catalog.models import (
@@ -58,13 +60,30 @@ class CategorySerializer(FullCleanModelSerializer):
 
 
 class ProductSerializer(FullCleanModelSerializer):
+    price = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = [
             'id', 'sku', 'name', 'description', 'category', 'base_unit',
-            'requires_lot', 'requires_expiry', 'is_active', 'version',
+            'requires_lot', 'requires_expiry', 'is_active', 'version', 'price',
         ]
-        read_only_fields = ['id', 'version']
+        read_only_fields = ['id', 'version', 'price']
+
+    def get_price(self, obj):
+        now = timezone.now()
+        price = (
+            ProductPrice.all_objects.filter(
+                tenant=obj.tenant,
+                product=obj,
+                is_active=True,
+                valid_from__lte=now,
+            )
+            .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=now))
+            .order_by('-valid_from')
+            .first()
+        )
+        return f'{price.amount:.2f}' if price else None
 
 
 class ProductUnitSerializer(FullCleanModelSerializer):

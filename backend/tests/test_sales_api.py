@@ -198,6 +198,51 @@ def test_api_creates_counter_sale_and_deducts_stock(sales_api_context):
 
 
 @pytest.mark.django_db
+def test_current_cash_session_reports_confirmed_sales_totals(sales_api_context):
+    ctx = sales_api_context
+    open_response = _post_json(
+        ctx['client'],
+        '/api/v1/cash-sessions/open/',
+        {
+            'branch': str(ctx['branch'].id),
+            'opening_amount': '10.00',
+        },
+        tenant=ctx['tenant'],
+        idempotency_key='api-cash-open-totals',
+    )
+    assert open_response.status_code == 201
+
+    response = _post_json(
+        ctx['client'],
+        '/api/v1/sales/counter/',
+        {
+            'branch': str(ctx['branch'].id),
+            'stock_location': str(ctx['location'].id),
+            'items': [{
+                'product': str(ctx['product'].id),
+                'unit': str(ctx['unit'].id),
+                'quantity': '2.000000',
+                'factor': '1.000000',
+            }],
+            'payments': [{'method': 'cash', 'amount': '25.00'}],
+        },
+        tenant=ctx['tenant'],
+        idempotency_key='api-counter-sale-totals',
+    )
+    assert response.status_code == 201
+
+    current_response = ctx['client'].get(
+        f'/api/v1/cash-sessions/current/?branch={ctx["branch"].id}',
+        HTTP_X_TENANT_ID=str(ctx['tenant'].id),
+    )
+
+    assert current_response.status_code == 200
+    body = current_response.json()
+    assert body['sales_count'] == 1
+    assert body['total_sales'] == '25.00'
+
+
+@pytest.mark.django_db
 def test_api_rejects_counter_sale_payment_mismatch(sales_api_context):
     ctx = sales_api_context
     _post_json(

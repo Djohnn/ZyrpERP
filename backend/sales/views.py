@@ -3,6 +3,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from catalog.models import Product, Unit
 from inventory.models import StockLocation
@@ -15,6 +16,7 @@ from sales.serializers import (
     CounterSaleSerializer,
     OpenCashSessionSerializer,
     SaleSerializer,
+    SyncBatchSerializer,
 )
 from sales.services import (
     CashSessionRequired,
@@ -147,11 +149,18 @@ class SaleViewSet(viewsets.ReadOnlyModelViewSet):
     ]
 
     def get_queryset(self):
-        return Sale.objects.select_related(
+        queryset = Sale.objects.select_related(
             'branch',
             'cash_session',
             'operator',
         ).filter(tenant=self.request.tenant).prefetch_related('items', 'payments')
+        branch_id = self.request.query_params.get('branch')
+        cash_session_id = self.request.query_params.get('cash_session')
+        if branch_id:
+            queryset = queryset.filter(branch_id=branch_id)
+        if cash_session_id:
+            queryset = queryset.filter(cash_session_id=cash_session_id)
+        return queryset
 
     def get_permissions(self):
         permissions = [IsAuthenticated(), HasActiveTenant()]
@@ -210,3 +219,102 @@ class SaleViewSet(viewsets.ReadOnlyModelViewSet):
             SaleSerializer(sale, context=self.get_serializer_context()).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+def _route_batch_operation(request, op):
+    t = op['type']
+    payload = op['payload']
+
+    if t == 'sale:create':
+        serializer = CounterSaleSerializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        branch = _tenant_get(Branch, request.tenant, data['branch'])
+        sale = create_counter_sale(
+            tenant=request.tenant,
+            branch=branch,
+            operator=request.user,
+            stock_location=_tenant_get(StockLocation, request.tenant, data['stock_location']),
+            items=[{
+                'product': _tenant_get(Product, request.tenant, item['product']),
+                'unit': _tenant_get(Unit, request.tenant, item['unit']),
+                'quantity': item['quantity'],
+                'factor': item['factor'],
+                'discount_amount': item.get('discount_amount', 0),
+            } for item in data['items']],
+            payments=data['payments'],
+            idempotency_key=op['idempotency_key'],
+        )
+        return SaleSerializer(sale).data, None
+
+    if t == 'cash-session:open':
+        serializer = OpenCashSessionSerializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        session = open_cash_session(
+            tenant=request.tenant,
+            branch=_tenant_get(Branch, request.tenant, data['branch']),
+            operator=request.user,
+            opening_amount=data['opening_amount'],
+            idempotency_key=op['idempotency_key'],
+        )
+        return CashSessionSerializer(session).data, None
+
+    if t == 'cash-session:close':
+        serializer = CloseCashSessionSerializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        session_id = payload.get('session_id')
+        if not session_id:
+            raise ValueError('session_id is required')
+        session = _tenant_get(CashSession, request.tenant, session_id)
+        session = close_cash_session(
+            cash_session=session,
+            closing_amount=serializer.validated_data['closing_amount'],
+            idempotency_key=op['idempotency_key'],
+        )
+        return CashSessionSerializer(session).data, None
+
+    raise ValueError(f'Unknown operation type: {t}')
+
+
+class SyncBatchView(APIView):
+    permission_classes = [IsAuthenticated, HasActiveTenant, HasVerifiedMFA]
+
+    def post(self, request):
+        serializer = SyncBatchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        operations = serializer.validated_data['operations']
+
+        results = []
+        for op in operations:
+            try:
+                data, _ = _route_batch_operation(request, op)
+                results.append({
+                    'idempotency_key': op['idempotency_key'],
+                    'type': op['type'],
+                    'status': 'synced',
+                    'data': data,
+                })
+            except DuplicateIdempotencyKey:
+                results.append({
+                    'idempotency_key': op['idempotency_key'],
+                    'type': op['type'],
+                    'status': 'conflict',
+                    'error': 'Idempotency key already used with a different payload.',
+                })
+            except (CashSessionRequired, OpenCashSessionExists) as exc:
+                results.append({
+                    'idempotency_key': op['idempotency_key'],
+                    'type': op['type'],
+                    'status': 'conflict',
+                    'error': str(exc),
+                })
+            except (ValueError, ObjectDoesNotExist) as exc:
+                results.append({
+                    'idempotency_key': op['idempotency_key'],
+                    'type': op['type'],
+                    'status': 'failed',
+                    'error': str(exc),
+                })
+
+        return Response({'results': results})

@@ -5,6 +5,7 @@ import { App } from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { CashSessionProvider } from './contexts/CashSessionContext';
 import './styles/index.css';
+import '@shared/electron'; // Initialize electron API mock for browser
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

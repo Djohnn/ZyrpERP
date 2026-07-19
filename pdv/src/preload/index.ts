@@ -3,6 +3,14 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('electronAPI', {
   // Auth
   login: (apiKey: string) => ipcRenderer.invoke('auth:login', apiKey),
+  syncAuthTokens: (data: {
+    token: string;
+    refresh_token: string;
+    device_id: string;
+    branch_id?: string;
+    tenant_id?: string;
+    api_key: string;
+  }) => ipcRenderer.invoke('auth:sync-tokens', data),
   logout: () => ipcRenderer.invoke('auth:logout'),
   checkAuth: () => ipcRenderer.invoke('auth:check'),
   refreshToken: () => ipcRenderer.invoke('auth:refresh'),
@@ -37,6 +45,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('sale:list', params),
   getSaleDetail: (saleId: string) => ipcRenderer.invoke('sale:detail', saleId),
   getSaleReceipt: (saleId: string) => ipcRenderer.invoke('sale:receipt', saleId),
+  printReceipt: (data: { html: string; fileName: string }) =>
+    ipcRenderer.invoke('printing:receipt', data),
 
   // Catalog
   searchProducts: (query: string) => ipcRenderer.invoke('catalog:search-products', query),
@@ -50,4 +60,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Branch
   listBranches: () => ipcRenderer.invoke('branch:list'),
+
+  // Connectivity
+  getConnectivityStatus: () => ipcRenderer.invoke('connectivity:status'),
+  checkConnectivity: () => ipcRenderer.invoke('connectivity:check'),
+
+  // Sync
+  getSyncStatus: () => ipcRenderer.invoke('sync:status'),
+  startSync: () => ipcRenderer.invoke('sync:start'),
+  getPendingOperations: () => ipcRenderer.invoke('sync:pending'),
+  getJournal: () => ipcRenderer.invoke('sync:journal'),
 });

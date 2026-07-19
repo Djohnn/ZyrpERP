@@ -9,6 +9,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-not-for-production')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in config(
+        'CSRF_TRUSTED_ORIGINS',
+        default='http://localhost:5173,http://127.0.0.1:5173',
+    ).split(',')
+    if origin.strip()
+]
 
 DJANGO_APPS = [
     'django.contrib.admin',
@@ -33,12 +41,14 @@ LOCAL_APPS = [
     'catalog',
     'inventory',
     'sales',
+    'fiscal',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'tenancy.authentication.DeviceJWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
@@ -118,6 +128,14 @@ _DEV_MFA_KEY = base64.urlsafe_b64encode(
 MFA_ENCRYPTION_KEY = config('MFA_ENCRYPTION_KEY', default=_DEV_MFA_KEY)
 
 LOG_LEVEL = config('LOG_LEVEL', default='INFO')
+
+PLUGNOTAS_API_KEY = config('PLUGNOTAS_API_KEY', default='')
+FISCAL_PROVIDERS = {
+    'plugnotas': {
+        'class': 'fiscal.adapters.plugnotas.PlugNotasAdapter',
+        'api_key': PLUGNOTAS_API_KEY,
+    },
+}
 
 LOGGING = {
     'version': 1,

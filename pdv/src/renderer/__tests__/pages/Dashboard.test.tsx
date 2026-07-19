@@ -130,7 +130,7 @@ describe('Dashboard', () => {
     await waitFor(() => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
-    expect(screen.getByText('Reimprimir Cupom Fiscal')).toBeInTheDocument();
+    expect(screen.getByText('Reimprimir Cupom Balcão')).toBeInTheDocument();
   });
 
   it('closes dropdown when clicking outside', async () => {
@@ -159,9 +159,17 @@ describe('Dashboard', () => {
   });
 
   it('reprints receipt successfully and shows success message', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [mockSale],
+    global.fetch = vi.fn((url: string) => {
+      if (url.includes('/fiscal-status/')) {
+        return Promise.resolve({ ok: false, status: 404 });
+      }
+      if (url.includes('/request-fiscal/')) {
+        return Promise.resolve({ ok: true, status: 201, json: async () => ({}) });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => [mockSale],
+      });
     }) as any;
 
     window.electronAPI.getSaleDetail.mockResolvedValue({
@@ -195,7 +203,7 @@ describe('Dashboard', () => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Reimprimir Cupom Fiscal'));
+    fireEvent.click(screen.getByText('Reimprimir Cupom Balcão'));
 
     await waitFor(() => {
       expect(window.electronAPI.getSaleDetail).toHaveBeenCalledWith('sale-123456789');
@@ -204,9 +212,17 @@ describe('Dashboard', () => {
   });
 
   it('shows error message when getSaleDetail fails', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [mockSale],
+    global.fetch = vi.fn((url: string) => {
+      if (url.includes('/fiscal-status/')) {
+        return Promise.resolve({ ok: false, status: 404 });
+      }
+      if (url.includes('/request-fiscal/')) {
+        return Promise.resolve({ ok: true, status: 201, json: async () => ({}) });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => [mockSale],
+      });
     }) as any;
 
     window.electronAPI.getSaleDetail.mockResolvedValue({
@@ -227,7 +243,7 @@ describe('Dashboard', () => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Reimprimir Cupom Fiscal'));
+    fireEvent.click(screen.getByText('Reimprimir Cupom Balcão'));
 
     await waitFor(() => {
       expect(screen.getByTestId('reprint-message')).toHaveTextContent('Erro ao buscar venda: Venda não encontrada');
@@ -235,9 +251,17 @@ describe('Dashboard', () => {
   });
 
   it('shows error message when printReceipt fails', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [mockSale],
+    global.fetch = vi.fn((url: string) => {
+      if (url.includes('/fiscal-status/')) {
+        return Promise.resolve({ ok: false, status: 404 });
+      }
+      if (url.includes('/request-fiscal/')) {
+        return Promise.resolve({ ok: true, status: 201, json: async () => ({}) });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => [mockSale],
+      });
     }) as any;
 
     window.electronAPI.getSaleDetail.mockResolvedValue({
@@ -271,7 +295,7 @@ describe('Dashboard', () => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Reimprimir Cupom Fiscal'));
+    fireEvent.click(screen.getByText('Reimprimir Cupom Balcão'));
 
     await waitFor(() => {
       expect(screen.getByTestId('reprint-message')).toHaveTextContent('Falha na impressão: Impressora não conectada');
@@ -279,9 +303,17 @@ describe('Dashboard', () => {
   });
 
   it('disables action button while reprinting', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [mockSale],
+    global.fetch = vi.fn((url: string) => {
+      if (url.includes('/fiscal-status/')) {
+        return Promise.resolve({ ok: false, status: 404 });
+      }
+      if (url.includes('/request-fiscal/')) {
+        return Promise.resolve({ ok: true, status: 201, json: async () => ({}) });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => [mockSale],
+      });
     }) as any;
 
     let resolvePrint: (value: any) => void;
@@ -316,7 +348,7 @@ describe('Dashboard', () => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Reimprimir Cupom Fiscal'));
+    fireEvent.click(screen.getByText('Reimprimir Cupom Balcão'));
 
     await waitFor(() => {
       expect(actionButton).toBeDisabled();

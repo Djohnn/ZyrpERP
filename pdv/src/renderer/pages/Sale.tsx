@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCashSession } from '../contexts/CashSessionContext';
 import { Card, Button, Input, Modal } from '../components/ui';
+import { buildReceiptHtml, formatReceiptQuantity } from '../utils/receipt';
 
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -12,6 +13,13 @@ function authHeaders(): Record<string, string> {
   if (tid) headers['X-Tenant-ID'] = tid;
   return headers;
 }
+
+const methodLabels: Record<string, string> = {
+  cash: 'Dinheiro',
+  pix: 'Pix',
+  card_debit: 'Cartão Débito',
+  card_credit: 'Cartão Crédito',
+};
 
 export function Sale() {
   const { isAuthenticated } = useAuth();
@@ -30,12 +38,14 @@ export function Sale() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [payments, setPayments] = useState<Array<{ method: string; amount: number; reference: string }>>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'pix' | 'card' | 'card_integrated'>('cash');
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentReference, setPaymentReference] = useState('');
+  const [pendingMethod, setPendingMethod] = useState<'cash' | 'pix' | 'card_debit' | 'card_credit'>('cash');
+  const [pendingAmount, setPendingAmount] = useState('');
+  const [pendingReceived, setPendingReceived] = useState('');
+  const [pendingReference, setPendingReference] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<any>(null);
+  const [printMessage, setPrintMessage] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -52,7 +62,22 @@ export function Sale() {
   }, [items, payments]);
 
   const { grossTotal, discountTotal, netTotal, paymentTotal } = calculateTotals();
-  const changeAmount = paymentTotal - netTotal;
+  const remaining = Math.max(netTotal - paymentTotal, 0);
+  const isCash = pendingMethod === 'cash';
+
+  const pendingNum = parseFloat(pendingAmount) || 0;
+  const receivedNum = parseFloat(pendingReceived) || 0;
+  const changePreview = isCash && receivedNum > remaining + pendingNum
+    ? receivedNum - (remaining + pendingNum)
+    : isCash && receivedNum > 0 && receivedNum >= pendingNum
+      ? receivedNum - pendingNum
+      : 0;
+
+  useEffect(() => {
+    if (!isCash && remaining > 0) {
+      setPendingAmount(remaining.toFixed(2));
+    }
+  }, [pendingMethod, remaining, isCash]);
 
   const handleProductSelect = (product: any) => {
     setShowSearch(false);
@@ -136,19 +161,27 @@ export function Sale() {
   };
 
   const addPayment = () => {
-    if (!paymentAmount || parseFloat(paymentAmount) <= 0) return;
+    if (pendingNum <= 0) return;
+    if (!isCash && pendingNum > remaining) return;
+    const effectiveAmount = isCash
+      ? Math.min(pendingNum, remaining + (pendingNum > remaining ? 0 : 0))
+      : pendingNum;
+    if (effectiveAmount <= 0) return;
     setPayments(prev => [...prev, {
-      method: paymentMethod,
-      amount: parseFloat(paymentAmount),
-      reference: paymentReference
+      method: pendingMethod,
+      amount: effectiveAmount,
+      reference: pendingReference,
     }]);
-    setPaymentAmount('');
-    setPaymentReference('');
+    setPendingAmount('');
+    setPendingReceived('');
+    setPendingReference('');
   };
 
   const removePayment = (index: number) => {
     setPayments(prev => prev.filter((_, i) => i !== index));
   };
+
+  const isConfirmEnabled = items.length > 0 && payments.length > 0 && paymentTotal >= netTotal;
 
   const handleSubmit = async () => {
     if (items.length === 0) {
@@ -180,29 +213,42 @@ export function Sale() {
         discount_amount: item.discount.toFixed(2)
       }));
 
-      const paymentsPayload = payments.map(p => ({
+const paymentsPayload = payments.map(p => ({
         method: p.method,
         amount: p.amount.toFixed(2),
         reference: p.reference || undefined
       }));
 
-      const response = await fetch('/api/v1/sales/counter/', {
-        method: 'POST',
-        headers: { ...authHeaders(), 'Idempotency-Key': crypto.randomUUID() },
-        body: JSON.stringify({
-          branch: localStorage.getItem('branch_id'),
-          stock_location: localStorage.getItem('stock_location_id'),
-          items: itemsPayload,
-          payments: paymentsPayload,
-        }),
-      });
+      const electronAPI = (window as any).electronAPI;
+      const saleData = {
+        branch: localStorage.getItem('branch_id'),
+        stock_location: localStorage.getItem('stock_location_id'),
+        items: itemsPayload,
+        payments: paymentsPayload,
+      };
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || 'Erro ao criar venda');
+      let sale;
+      if (electronAPI?.createSale) {
+        const result = await electronAPI.createSale(saleData);
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao criar venda');
+        }
+        sale = result.data;
+      } else {
+        const response = await fetch('/api/v1/sales/counter/', {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Idempotency-Key': crypto.randomUUID() },
+          body: JSON.stringify(saleData),
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.detail || 'Erro ao criar venda');
+        }
+
+        sale = await response.json();
       }
 
-      const sale = await response.json();
       const receiptItems = sale.items?.map((saleItem: any) => {
         const cartItem = items.find(item => item.product.id === saleItem.product);
         return {
@@ -211,6 +257,7 @@ export function Sale() {
         };
       });
       setReceipt({ ...sale, items: receiptItems || sale.items });
+      setPrintMessage('');
       setItems([]);
       setPayments([]);
       setError('');
@@ -223,13 +270,21 @@ export function Sale() {
 
   if (!isAuthenticated) return null;
 
-  const formatReceiptQuantity = (quantity: string | number): string => {
-    const value = Number(quantity);
-    if (!Number.isFinite(value)) return String(quantity);
-    return value.toFixed(1);
-  };
-
-  const handlePrintReceipt = () => {
+  const handlePrintReceipt = async () => {
+    if (!receipt) return;
+    setPrintMessage('');
+    const html = buildReceiptHtml(receipt);
+    const fileName = `cupom_nao_fiscal_${String(receipt.id).slice(0, 8)}`;
+    const electronPrint = (window as any).electronAPI?.printReceipt;
+    if (electronPrint) {
+      const result = await electronPrint({ html, fileName });
+      if (result?.success) {
+        setPrintMessage(`Cupom enviado para impressão e salvo em: ${result.savedPath}`);
+      } else {
+        setPrintMessage(`Cupom salvo, mas a impressão não foi concluída: ${result?.error || 'erro desconhecido'}`);
+      }
+      return;
+    }
     window.print();
   };
 
@@ -361,70 +416,131 @@ export function Sale() {
             <Card style={{ padding: '24px' }}>
               <h3 style={{ marginBottom: '16px', fontSize: '1rem', fontWeight: 600 }}>Pagamento</h3>
 
+              {/* Method selector */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                {['cash', 'pix', 'card_external', 'card_integrated'].map(method => (
+                {(['cash', 'pix', 'card_debit', 'card_credit'] as const).map(method => (
                   <label key={method} style={{
                     display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px',
-                    border: `2px solid ${paymentMethod === method ? '#1976d2' : '#e0e0e0'}`,
+                    border: `2px solid ${pendingMethod === method ? '#1976d2' : '#e0e0e0'}`,
                     borderRadius: '8px', cursor: 'pointer',
-                    background: paymentMethod === method ? '#e3f2fd' : '#fff',
+                    background: pendingMethod === method ? '#e3f2fd' : '#fff',
                     transition: 'all 0.2s'
                   }}>
-                    <input type="radio" name="paymentMethod" value={method}
-                      checked={paymentMethod === method}
-                      onChange={() => setPaymentMethod(method as any)}
+                    <input type="radio" name="pendingMethod" value={method}
+                      checked={pendingMethod === method}
+                      onChange={() => {
+                        const prev = pendingMethod;
+                        setPendingMethod(method);
+                        if (method !== 'cash') {
+                          setPendingReceived('');
+                        } else {
+                          setPendingAmount('');
+                          setPendingReceived('');
+                        }
+                      }}
                       style={{ display: 'none' }} />
-                    <span style={{ fontWeight: 500, textTransform: 'capitalize', color: paymentMethod === method ? '#1976d2' : '#333' }}>
-                      {method === 'cash' && 'Dinheiro'}
-                      {method === 'pix' && 'PIX'}
-                      {method === 'card_external' && 'Cartão (TEF)'}
-                      {method === 'card_integrated' && 'Cartão (integrado)'}
+                    <span style={{ fontWeight: 500, color: pendingMethod === method ? '#1976d2' : '#333' }}>
+                      {methodLabels[method]}
                     </span>
                   </label>
                 ))}
               </div>
 
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#757575', marginBottom: '4px' }}>Valor</label>
-                  <input type="number" step="0.01" min="0.01" value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)} placeholder="0,00"
-                    style={{ width: '100%', padding: '12px 16px', fontSize: '1rem', border: '1px solid #e0e0e0', borderRadius: '8px' }} />
+              {/* Dinheiro: received + change */}
+              {isCash ? (
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#757575', marginBottom: '4px' }}>
+                      Valor recebido
+                    </label>
+                    <input type="number" step="0.01" min="0" value={pendingReceived}
+                      onChange={(e) => {
+                        setPendingReceived(e.target.value);
+                        const r = parseFloat(e.target.value) || 0;
+                        if (r > 0) {
+                          const eff = Math.min(r, remaining);
+                          setPendingAmount(eff.toFixed(2));
+                        } else {
+                          setPendingAmount('');
+                        }
+                      }}
+                      placeholder="0,00"
+                      style={{ width: '100%', padding: '12px 16px', fontSize: '1rem', border: '1px solid #e0e0e0', borderRadius: '8px' }} />
+                  </div>
+                  <div style={{
+                    padding: '12px', borderRadius: '8px', textAlign: 'center',
+                    backgroundColor: changePreview > 0 ? '#e8f5e9' : '#f5f5f5',
+                    color: changePreview > 0 ? '#2e7d32' : '#757575',
+                    fontWeight: 600, fontSize: '1.125rem', marginBottom: '12px'
+                  }}>
+                    Troco: R$ {changePreview.toFixed(2)}
+                  </div>
+                  {remaining > 0 && (
+                    <div style={{ textAlign: 'center', color: '#e65100', fontSize: '0.8rem', marginBottom: '8px' }}>
+                      Falta receber: R$ {remaining.toFixed(2)}
+                    </div>
+                  )}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#757575', marginBottom: '4px' }}>Referência</label>
-                  <input type="text" value={paymentReference}
-                    onChange={(e) => setPaymentReference(e.target.value)} placeholder="Opcional"
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '1rem' }} />
+              ) : (
+                /* PIX / Cartao: auto-filled amount */
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{
+                    padding: '16px', borderRadius: '8px', textAlign: 'center',
+                    backgroundColor: '#e3f2fd', color: '#1976d2', fontWeight: 700,
+                    fontSize: '1.5rem', marginBottom: '8px'
+                  }}>
+                    R$ {pendingNum.toFixed(2)}
+                  </div>
+                  <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#757575', marginBottom: '8px' }}>
+                    {pendingMethod === 'pix' ? 'Valor do PIX' : 'Valor da venda no cartão'}
+                  </div>
+                  {remaining > 0 && (
+                    <div style={{ textAlign: 'center', color: '#e65100', fontSize: '0.8rem', marginBottom: '8px' }}>
+                      Falta receber: R$ {remaining.toFixed(2)}
+                    </div>
+                  )}
                 </div>
+              )}
+
+              {/* Reference */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#757575', marginBottom: '4px' }}>Referência</label>
+                <input type="text" value={pendingReference}
+                  onChange={(e) => setPendingReference(e.target.value)} placeholder="Opcional"
+                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '1rem' }} />
               </div>
 
               <Button variant="primary" fullWidth onClick={addPayment}
-                disabled={!paymentAmount || parseFloat(paymentAmount) <= 0}>
+                disabled={!(isCash ? receivedNum > 0 : remaining > 0)}
+                title={!isCash && remaining <= 0 ? 'Valor já totalmente recebido' : ''}>
                 Adicionar Pagamento
               </Button>
 
+              {/* Payment list */}
               {payments.length > 0 && (
                 <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
                   <h4 style={{ margin: '0 0 12px', fontSize: '0.875rem', fontWeight: 600 }}>Pagamentos</h4>
-                  {payments.map((payment, index) => (
-                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fafafa', borderRadius: '8px', marginBottom: '8px' }}>
-                      <div>
-                        <div style={{ fontWeight: 500, fontSize: '0.875rem' }}>{payment.method}</div>
-                        {payment.reference && <div style={{ fontSize: '0.75rem', color: '#757575' }}>Ref: {payment.reference}</div>}
+                  {payments.map((payment, index) => {
+                    const pMethod = methodLabels[payment.method] || payment.method;
+                    return (
+                      <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fafafa', borderRadius: '8px', marginBottom: '8px' }}>
+                        <div>
+                          <div style={{ fontWeight: 500, fontSize: '0.875rem' }}>{pMethod}</div>
+                          {payment.reference && <div style={{ fontSize: '0.75rem', color: '#757575' }}>Ref: {payment.reference}</div>}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontWeight: 600, color: '#1976d2' }}>R$ {payment.amount.toFixed(2)}</span>
+                          <button onClick={() => removePayment(index)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c62828' }}>X</button>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontWeight: 600, color: '#1976d2' }}>R$ {payment.amount.toFixed(2)}</span>
-                        <button onClick={() => removePayment(index)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c62828' }}>X</button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </Card>
 
-            {/* Totals */}
+            {/* Totals + Confirm */}
             <Card style={{ padding: '24px', background: '#f5f5f5' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -438,27 +554,37 @@ export function Sale() {
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e0e0e0', paddingTop: '8px', marginTop: '8px' }}>
-                  <span style={{ fontSize: '1.125rem', fontWeight: 600 }}>Total</span>
+                  <span style={{ fontSize: '1.125rem', fontWeight: 600 }}>Total da venda</span>
                   <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1976d2' }}>R$ {netTotal.toFixed(2)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Pagamento</span>
-                  <span style={{ fontWeight: 600, color: paymentTotal >= parseFloat(netTotal.toFixed(2)) ? '#2e7d32' : '#c62828' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px' }}>
+                  <span>Total recebido</span>
+                  <span style={{ fontWeight: 600, color: paymentTotal >= netTotal ? '#2e7d32' : '#c62828' }}>
                     R$ {paymentTotal.toFixed(2)}
                   </span>
                 </div>
-                {changeAmount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px dashed #e0e0e0', color: '#2e7d32' }}>
-                    <span style={{ fontWeight: 500 }}>Troco</span>
-                    <span style={{ fontWeight: 600, fontSize: '1.125rem' }}>R$ {changeAmount.toFixed(2)}</span>
+                {remaining > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e65100', fontWeight: 600 }}>
+                    <span>Falta receber</span>
+                    <span>R$ {remaining.toFixed(2)}</span>
+                  </div>
+                )}
+                {paymentTotal > netTotal && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#2e7d32', fontWeight: 600, borderTop: '1px dashed #e0e0e0', paddingTop: '8px' }}>
+                    <span>Troco</span>
+                    <span>R$ {(paymentTotal - netTotal).toFixed(2)}</span>
                   </div>
                 )}
               </div>
 
               <Button variant="primary" fullWidth size="lg" onClick={handleSubmit}
-                disabled={processing || items.length === 0 || payments.length === 0 || paymentTotal < parseFloat(netTotal.toFixed(2))}
+                disabled={processing || !isConfirmEnabled}
                 style={{ marginTop: '24px', fontSize: '1rem', padding: '16px' }}>
-                {processing ? 'Processando...' : 'Confirmar Venda'}
+                {processing ? 'Processando...'
+                  : items.length === 0 ? 'Adicione itens ao carrinho'
+                  : payments.length === 0 ? 'Adicione um pagamento'
+                  : remaining > 0 ? `Falta R$ ${remaining.toFixed(2)}`
+                  : 'Confirmar Venda'}
               </Button>
             </Card>
           </div>
@@ -503,6 +629,11 @@ export function Sale() {
               <Button variant="primary" fullWidth onClick={handlePrintReceipt} style={{ marginTop: '24px' }}>
                 Imprimir Cupom
               </Button>
+              {printMessage && (
+                <p style={{ margin: '12px 0 0', color: '#2e7d32', fontSize: '0.75rem', textAlign: 'center' }}>
+                  {printMessage}
+                </p>
+              )}
             </div>
           </div>
         </Modal>

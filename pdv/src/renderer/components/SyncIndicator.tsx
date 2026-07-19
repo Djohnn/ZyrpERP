@@ -29,6 +29,7 @@ export function SyncIndicator() {
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -55,7 +56,23 @@ export function SyncIndicator() {
   }, [fetchStatus]);
 
   const handleClick = async () => {
-    if (!isOnline || syncing) return;
+    if (syncing) return;
+    
+    if (!isOnline) {
+      // Offline: force connectivity check
+      setChecking(true);
+      try {
+        const result = await window.electronAPI.checkConnectivity();
+        if (result?.success) {
+          setIsOnline(result.data.isOnline);
+        }
+      } finally {
+        setChecking(false);
+      }
+      return;
+    }
+    
+    // Online: start sync
     setSyncing(true);
     try {
       await window.electronAPI.startSync();
@@ -79,14 +96,14 @@ export function SyncIndicator() {
 
   const getLabel = (): string => {
     if (syncing) return 'Sincronizando...';
-    if (!isOnline) return 'Offline';
+    if (!isOnline) return checking ? 'Verificando...' : 'Offline';
     if (pendingCount > 0) return `${pendingCount} pendente${pendingCount > 1 ? 's' : ''}`;
     return 'Online';
   };
 
   const getDot = (): string => {
     if (syncing) return '\u23F3';
-    if (!isOnline) return '\u26A0';
+    if (!isOnline) return checking ? '\u23F3' : '\u26A0';
     if (pendingCount > 0) return '\u26A0';
     return '\u2714';
   };
@@ -97,11 +114,11 @@ export function SyncIndicator() {
       style={getStyle()}
       title={
         syncing ? 'Sincronizando opera\u00E7\u00F5es...'
-        : !isOnline ? 'Sem conex\u00E3o com o servidor'
+        : !isOnline ? (checking ? 'Verificando conex\u00E3o...' : 'Offline - clique para verificar')
         : pendingCount > 0 ? `${pendingCount} opera\u00E7\u00F5es aguardando sincroniza\u00E7\u00E3o`
         : 'Conectado ao servidor'
       }
-      disabled={syncing || !isOnline}
+      disabled={syncing || checking}
     >
       <span>{getDot()}</span>
       <span>{getLabel()}</span>

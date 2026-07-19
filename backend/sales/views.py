@@ -149,11 +149,18 @@ class SaleViewSet(viewsets.ReadOnlyModelViewSet):
     ]
 
     def get_queryset(self):
-        return Sale.objects.select_related(
+        queryset = Sale.objects.select_related(
             'branch',
             'cash_session',
             'operator',
         ).filter(tenant=self.request.tenant).prefetch_related('items', 'payments')
+        branch_id = self.request.query_params.get('branch')
+        cash_session_id = self.request.query_params.get('cash_session')
+        if branch_id:
+            queryset = queryset.filter(branch_id=branch_id)
+        if cash_session_id:
+            queryset = queryset.filter(cash_session_id=cash_session_id)
+        return queryset
 
     def get_permissions(self):
         permissions = [IsAuthenticated(), HasActiveTenant()]

@@ -21,8 +21,10 @@ export function setupSaleHandlers() {
   }) => {
     logger.info('Creating counter sale', { branch: data.branch, itemsCount: data.items.length });
     try {
-      const result = await api.post('/sales/counter/', data);
-      return { success: true, data: result };
+      const res = await api.post('/sales/counter/', data, {
+        headers: { 'Idempotency-Key': crypto.randomUUID() },
+      });
+      return { success: true, data: res.data };
     } catch (error) {
       logger.error('Failed to create sale:', error);
       const err = error as { response?: { data?: { code?: string; detail?: string } } };
@@ -38,8 +40,8 @@ export function setupSaleHandlers() {
 
   ipcMain.handle('sale:list', async (event: IpcMainInvokeEvent, params?: { branch?: string; limit?: number; offset?: number }) => {
     try {
-      const result = await api.get('/sales/', { params });
-      return { success: true, data: result };
+      const res = await api.get('/sales/', { params });
+      return { success: true, data: res.data };
     } catch (error) {
       logger.error('Failed to list sales:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Failed to list sales' };
@@ -48,8 +50,8 @@ export function setupSaleHandlers() {
 
   ipcMain.handle('sale:detail', async (event: IpcMainInvokeEvent, saleId: string) => {
     try {
-      const result = await api.get(`/sales/${saleId}/`);
-      return { success: true, data: result };
+      const res = await api.get(`/sales/${saleId}/`);
+      return { success: true, data: res.data };
     } catch (error) {
       logger.error('Failed to get sale detail:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get sale detail' };
@@ -58,8 +60,8 @@ export function setupSaleHandlers() {
 
   ipcMain.handle('sale:receipt', async (event: IpcMainInvokeEvent, saleId: string) => {
     try {
-      const result = await api.get(`/sales/${saleId}/receipt/`);
-      return { success: true, data: result };
+      const res = await api.get(`/sales/${saleId}/receipt/`);
+      return { success: true, data: res.data };
     } catch (error) {
       logger.error('Failed to get receipt:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get receipt' };

@@ -1,6 +1,9 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: resolve(__dirname, '.env') });
 
 export default defineConfig({
   main: {
@@ -26,6 +29,14 @@ export default defineConfig({
   renderer: {
     root: resolve(__dirname, 'src/renderer'),
     plugins: [react()],
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
+      },
+    },
     build: {
       outDir: resolve(__dirname, 'dist/renderer'),
       rollupOptions: {

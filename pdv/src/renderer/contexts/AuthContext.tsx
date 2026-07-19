@@ -99,6 +99,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setAuthData(data);
+        localStorage.setItem('api_key', apiKey);
+
+        if ((window as any).electronAPI?.syncAuthTokens) {
+          (window as any).electronAPI.syncAuthTokens({
+            token: data.token,
+            refresh_token: data.refresh_token,
+            device_id: data.device_id,
+            branch_id: data.branch_id,
+            tenant_id: data.tenant_id,
+            api_key: apiKey,
+          }).catch((err: any) => console.error('Failed to sync auth tokens:', err));
+        }
+
         await syncPrimaryStockLocation();
         setIsAuthenticated(true);
         setDeviceId(data.device_id);
@@ -130,6 +143,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setAuthData(data);
       localStorage.setItem('api_key', apiKey);
+
+      // Sync auth tokens to main process for IPC calls
+      if ((window as any).electronAPI?.syncAuthTokens) {
+        (window as any).electronAPI.syncAuthTokens({
+          token: data.token,
+          refresh_token: data.refresh_token,
+          device_id: data.device_id,
+          branch_id: data.branch_id,
+          tenant_id: data.tenant_id,
+          api_key: apiKey,
+        }).catch((err: any) => console.error('Failed to sync auth tokens:', err));
+      }
+
       await syncPrimaryStockLocation();
 
       setIsAuthenticated(true);
@@ -144,6 +170,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     clearAuthData();
+    if ((window as any).electronAPI?.logout) {
+      (window as any).electronAPI.logout().catch(() => {});
+    }
     setIsAuthenticated(false);
     setDeviceId(null);
     setBranchId(null);

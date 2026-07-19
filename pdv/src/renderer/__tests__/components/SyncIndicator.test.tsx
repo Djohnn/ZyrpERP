@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, act } from 'vitest';
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import { SyncIndicator } from '../../components/SyncIndicator';
 
@@ -30,7 +30,7 @@ describe('SyncIndicator', () => {
     expect(screen.getByRole('button')).not.toBeDisabled();
   });
 
-  it('shows offline state with disabled button when disconnected', async () => {
+  it('shows offline state with ENABLED button when disconnected (click to check)', async () => {
     window.electronAPI.getConnectivityStatus.mockResolvedValue({
       success: true, data: { isOnline: false, lastOnlineAt: null, lastOfflineAt: null, lastSyncAt: null },
     });
@@ -41,7 +41,8 @@ describe('SyncIndicator', () => {
     await waitFor(() => {
       expect(screen.getByText('Offline')).toBeInTheDocument();
     });
-    expect(screen.getByRole('button')).toBeDisabled();
+    // Button should be ENABLED to allow manual connectivity check
+    expect(screen.getByRole('button')).not.toBeDisabled();
   });
 
   it('shows pending count when there are pending items', async () => {
@@ -119,6 +120,28 @@ describe('SyncIndicator', () => {
     expect(window.electronAPI.startSync).not.toHaveBeenCalled();
   });
 
+  it('triggers connectivity check when clicking offline button', async () => {
+    window.electronAPI.getConnectivityStatus.mockResolvedValue({
+      success: true, data: { isOnline: false, lastOnlineAt: null, lastOfflineAt: null, lastSyncAt: null },
+    });
+    window.electronAPI.getSyncStatus.mockResolvedValue({
+      success: true, data: { status: 'idle', pendingCount: 0, lastSyncAt: null, error: null },
+    });
+    window.electronAPI.checkConnectivity.mockResolvedValue({
+      success: true, data: { isOnline: true },
+    });
+    render(<SyncIndicator />);
+    await waitFor(() => {
+      expect(screen.getByText('Offline')).toBeInTheDocument();
+    });
+
+    // Click offline button to trigger connectivity check
+    fireEvent.click(screen.getByRole('button'));
+    await waitFor(() => {
+      expect(window.electronAPI.checkConnectivity).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('updates state on polling interval', async () => {
     vi.useFakeTimers();
     window.electronAPI.getConnectivityStatus.mockResolvedValue({
@@ -156,6 +179,7 @@ describe('SyncIndicator', () => {
     await waitFor(() => {
       expect(screen.getByText('Offline')).toBeInTheDocument();
     });
-    expect(screen.getByRole('button')).toBeDisabled();
+    // Button should be ENABLED to allow manual check
+    expect(screen.getByRole('button')).not.toBeDisabled();
   });
 });

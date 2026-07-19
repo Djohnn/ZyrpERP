@@ -70,7 +70,12 @@ describe('Sale', () => {
   });
 
   it('shows printable receipt with product name and normalized quantity', async () => {
-    vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    const browserPrint = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    const printReceipt = vi.fn().mockResolvedValue({
+      success: true,
+      savedPath: 'C:\\ERP\\cupom_nao_fiscal_sale-1.pdf',
+    });
+    (window as any).electronAPI = { printReceipt };
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(JSON.stringify({
@@ -121,6 +126,15 @@ describe('Sale', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Imprimir Cupom' }));
 
-    expect(window.print).toHaveBeenCalledOnce();
+    await waitFor(() => {
+      expect(printReceipt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fileName: 'cupom_nao_fiscal_sale-1',
+          html: expect.stringContaining('Produto PDV'),
+        }),
+      );
+    });
+    expect(await screen.findByText(/Cupom enviado para impressão e salvo em:/)).toBeInTheDocument();
+    expect(browserPrint).not.toHaveBeenCalled();
   });
 });

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { join } from 'path';
 import { isDev } from './utils/env';
@@ -10,6 +11,7 @@ import { setupCashSessionHandlers } from './ipc/cash-session';
 import { setupCatalogCacheHandlers } from './ipc/catalog-cache';
 import { setupSyncHandlers } from './ipc/sync';
 import { setupConnectivityHandlers } from './ipc/connectivity';
+import { setupPrintingHandlers } from './ipc/printing';
 import { auth } from './services/auth';
 import { api } from './services/api';
 import { catalogCache } from './services/catalogCache';
@@ -27,7 +29,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 720,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
+      preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -42,7 +44,8 @@ function createWindow() {
   });
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
+    mainWindow.loadURL(devUrl);
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
@@ -74,6 +77,7 @@ app.whenReady().then(async () => {
   setupCashSessionHandlers();
   setupSyncHandlers();
   setupConnectivityHandlers();
+  setupPrintingHandlers();
 
   createWindow();
 

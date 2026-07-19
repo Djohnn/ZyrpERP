@@ -1,6 +1,7 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { api } from '../services/api';
 import { auth } from '../services/auth';
+import { setItem, removeItem } from '../utils/storage';
 import { logger } from '../utils/logger';
 
 export function setupAuthHandlers() {
@@ -13,6 +14,23 @@ export function setupAuthHandlers() {
       logger.error('Login failed:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Invalid API key' };
     }
+  });
+
+  ipcMain.handle('auth:sync-tokens', async (_event, data: {
+    token: string;
+    refresh_token: string;
+    device_id: string;
+    branch_id?: string;
+    tenant_id?: string;
+    api_key: string;
+  }) => {
+    setItem('access_token', data.token);
+    setItem('refresh_token', data.refresh_token);
+    setItem('device_id', data.device_id);
+    setItem('branch_id', data.branch_id ?? '');
+    setItem('tenant_id', data.tenant_id ?? '');
+    setItem('api_key', data.api_key);
+    return { success: true };
   });
 
   ipcMain.handle('auth:logout', async () => {

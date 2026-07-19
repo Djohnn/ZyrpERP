@@ -71,6 +71,7 @@ class DeviceRegisterView(generics.CreateAPIView):
 
 class DeviceValidateView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = DeviceValidateSerializer(data=request.data)

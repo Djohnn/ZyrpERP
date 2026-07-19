@@ -3,6 +3,7 @@ import json
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from audit.services import create_audit_record
@@ -136,19 +137,77 @@ def close_cash_session(*, cash_session, closing_amount, idempotency_key):
         raise ValueError('Idempotency-Key is required.')
     if cash_session.status == 'closed':
         return cash_session
+
+    sales_total = Sale.all_objects.filter(
+        cash_session=cash_session,
+        status='confirmed',
+    ).aggregate(total=Sum('net_total'))['total'] or Decimal('0')
+
+    cash_ins_total = CashMovement.all_objects.filter(
+        cash_session=cash_session,
+        movement_type='cash_in',
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    cash_outs_total = CashMovement.all_objects.filter(
+        cash_session=cash_session,
+        movement_type='cash_out',
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    expenses_total = CashMovement.all_objects.filter(
+        cash_session=cash_session,
+        movement_type='expense',
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    other_in_total = CashMovement.all_objects.filter(
+        cash_session=cash_session,
+        movement_type='other_in',
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    other_out_total = CashMovement.all_objects.filter(
+        cash_session=cash_session,
+        movement_type='other_out',
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    computed_expected = _money(
+        cash_session.opening_amount
+        + sales_total
+        + cash_ins_total
+        + other_in_total
+        - cash_outs_total
+        - expenses_total
+        - other_out_total
+    )
+
+    cash_session.expected_amount = computed_expected
+    closing = _money(closing_amount)
+    difference = _money(computed_expected - closing)
     cash_session.status = 'closed'
-    cash_session.closing_amount = _money(closing_amount)
+    cash_session.closing_amount = closing
     cash_session.closed_at = timezone.now()
     cash_session.version += 1
     cash_session.save(
         update_fields=[
             'status',
             'closing_amount',
+            'expected_amount',
             'closed_at',
             'version',
             'updated_at',
         ]
     )
+    if difference != 0:
+        notes = (
+            f'Diferença de R$ {difference} no fechamento '
+            f'(esperado R$ {computed_expected}, '
+            f'declarado R$ {closing})'
+        )
+        CashMovement.all_objects.create(
+            tenant=cash_session.tenant,
+            cash_session=cash_session,
+            movement_type='closing_adjustment',
+            amount=abs(difference),
+            notes=notes,
+        )
     return cash_session
 
 

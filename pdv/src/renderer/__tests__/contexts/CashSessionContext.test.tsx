@@ -91,4 +91,71 @@ describe('CashSessionContext', () => {
     expect(screen.getByTestId('session-status')).toHaveTextContent('closed');
     expect(screen.getByTestId('session-id')).toHaveTextContent('none');
   });
+
+  it('sends Idempotency-Key when opening cash session', async () => {
+    localStorage.setItem('access_token', 'token-1');
+    localStorage.setItem('tenant_id', 'tenant-1');
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        id: 'sess-new',
+        opening_amount: '100.00',
+        expected_amount: '100.00',
+      }), { status: 200 })
+    );
+
+    renderWithProviders();
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('btn-open'));
+
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        '/api/v1/cash-sessions/open/',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Idempotency-Key': expect.any(String),
+            Authorization: 'Bearer token-1',
+            'X-Tenant-ID': 'tenant-1',
+          }),
+        })
+      );
+    });
+  });
+
+  it('sends Idempotency-Key when closing cash session', async () => {
+    localStorage.setItem('cash_session', JSON.stringify({
+      sessionId: 'cash-1',
+      status: 'open',
+      openingAmount: '100.00',
+      expectedAmount: '200.00',
+      salesCount: 1,
+      totalSales: '100.00',
+    }));
+    localStorage.setItem('access_token', 'token-1');
+    localStorage.setItem('tenant_id', 'tenant-1');
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ status: 'closed' }), { status: 200 })
+    );
+
+    renderWithProviders();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('btn-close'));
+
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        '/api/v1/cash-sessions/cash-1/close/',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Idempotency-Key': expect.any(String),
+            Authorization: 'Bearer token-1',
+            'X-Tenant-ID': 'tenant-1',
+          }),
+        })
+      );
+    });
+  });
 });

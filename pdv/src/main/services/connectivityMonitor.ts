@@ -10,9 +10,8 @@ export interface ConnectivityState {
   lastSyncAt: Date | null;
 }
 
-const ONLINE_CHECK_URL = process.env.VITE_API_BASE_URL
-  ? `${process.env.VITE_API_BASE_URL.replace('/api/v1/', '/')}health/`
-  : 'http://localhost:8000/health/';
+const BASE = process.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const ONLINE_CHECK_URL = `${BASE.replace(/\/api\/v1\/?$/, '')}/health/`;
 
 const PING_INTERVAL_MS = 30000;
 const PING_TIMEOUT_MS = 5000;

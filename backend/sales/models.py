@@ -73,6 +73,9 @@ class CashMovement(VersionedSalesModel):
         ('sale_payment', 'Pagamento de venda'),
         ('cash_in', 'Reforco'),
         ('cash_out', 'Sangria'),
+        ('expense', 'Despesa'),
+        ('other_in', 'Outra entrada'),
+        ('other_out', 'Outra saida'),
         ('closing_adjustment', 'Ajuste de fechamento'),
     ]
 
@@ -209,6 +212,8 @@ class SalePayment(VersionedSalesModel):
         ('pix', 'Pix'),
         ('card_external', 'Cartao externo'),
         ('card_integrated', 'Cartao integrado'),
+        ('card_debit', 'Cartao debito'),
+        ('card_credit', 'Cartao credito'),
     ]
 
     sale = models.ForeignKey(Sale, on_delete=models.PROTECT, related_name='payments')

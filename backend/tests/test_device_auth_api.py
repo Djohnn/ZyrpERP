@@ -3,6 +3,7 @@ import uuid
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.test import Client
 from django.db import connection
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -146,6 +147,26 @@ def test_device_validate_returns_tokens_for_active_device(client):
     assert body['branch_id'] == str(branch.id)
     assert body['token']
     assert body['refresh_token']
+
+
+@pytest.mark.django_db
+def test_device_validate_ignores_session_cookie_and_does_not_require_csrf(client):
+    tenant, user, branch, device = _tenant_setup(email='csrf-device@test.local')
+    client = Client(enforce_csrf_checks=True)
+    client.force_login(user)
+
+    response = client.post(
+        '/api/v1/devices/validate/',
+        {'api_key': 'valid-device-key'},
+        content_type='application/json',
+        HTTP_ORIGIN='http://127.0.0.1:5173',
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body['device_id'] == str(device.id)
+    assert body['tenant_id'] == str(tenant.id)
+    assert body['branch_id'] == str(branch.id)
 
 
 @pytest.mark.django_db

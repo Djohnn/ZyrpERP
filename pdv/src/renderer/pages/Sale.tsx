@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCashSession } from '../contexts/CashSessionContext';
-import { Card, Button, Input, Modal } from '../components/ui';
-import { buildReceiptHtml, formatReceiptQuantity } from '../utils/receipt';
+import { Card, Button, Input } from '../components/ui';
+import { SaleConfirmationToast } from '../components/SaleConfirmationToast';
+import { buildReceiptHtml } from '../utils/receipt';
 
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -44,8 +45,11 @@ export function Sale() {
   const [pendingReference, setPendingReference] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [receipt, setReceipt] = useState<any>(null);
-  const [printMessage, setPrintMessage] = useState('');
+  const [confirmationSale, setConfirmationSale] = useState<{
+    id: string;
+    saleNumber: string;
+    data: any;
+  } | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -249,15 +253,19 @@ const paymentsPayload = payments.map(p => ({
         sale = await response.json();
       }
 
-      const receiptItems = sale.items?.map((saleItem: any) => {
+      const enrichedItems = sale.items?.map((saleItem: any) => {
         const cartItem = items.find(item => item.product.id === saleItem.product);
         return {
           ...saleItem,
           product: cartItem?.product || saleItem.product,
         };
       });
-      setReceipt({ ...sale, items: receiptItems || sale.items });
-      setPrintMessage('');
+      const enrichedSaleData = { ...sale, items: enrichedItems || sale.items };
+      setConfirmationSale({
+        id: sale.id,
+        saleNumber: String(sale.id).slice(0, 8),
+        data: enrichedSaleData,
+      });
       setItems([]);
       setPayments([]);
       setError('');
@@ -270,22 +278,40 @@ const paymentsPayload = payments.map(p => ({
 
   if (!isAuthenticated) return null;
 
-  const handlePrintReceipt = async () => {
-    if (!receipt) return;
-    setPrintMessage('');
-    const html = buildReceiptHtml(receipt);
-    const fileName = `cupom_nao_fiscal_${String(receipt.id).slice(0, 8)}`;
-    const electronPrint = (window as any).electronAPI?.printReceipt;
-    if (electronPrint) {
-      const result = await electronPrint({ html, fileName });
-      if (result?.success) {
-        setPrintMessage(`Cupom enviado para impressão e salvo em: ${result.savedPath}`);
-      } else {
-        setPrintMessage(`Cupom salvo, mas a impressão não foi concluída: ${result?.error || 'erro desconhecido'}`);
+  const handlePrintBalcao = async () => {
+    if (!confirmationSale) return;
+    const html = buildReceiptHtml(confirmationSale.data);
+    const fileName = `cupom_balcao_${confirmationSale.saleNumber}`;
+    const electronAPI = (window as any).electronAPI;
+    if (electronAPI?.printBalcaoReceipt) {
+      await electronAPI.printBalcaoReceipt({ html, fileName });
+    } else if (electronAPI?.printReceipt) {
+      await electronAPI.printReceipt({ html, fileName });
+    } else {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.print();
       }
-      return;
     }
-    window.print();
+  };
+
+  const handlePrintFiscal = async () => {
+    if (!confirmationSale) return;
+    const html = buildReceiptHtml(confirmationSale.data);
+    const fileName = `cupom_fiscal_${confirmationSale.saleNumber}`;
+    const electronAPI = (window as any).electronAPI;
+    if (electronAPI?.printFiscalReceipt) {
+      await electronAPI.printFiscalReceipt({ html, fileName });
+    } else if (electronAPI?.printReceipt) {
+      await electronAPI.printReceipt({ html, fileName });
+    } else {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.print();
+      }
+    }
   };
 
   return (
@@ -591,52 +617,15 @@ const paymentsPayload = payments.map(p => ({
         </div>
       </main>
 
-      {/* Receipt Modal */}
-      {receipt && (
-        <Modal isOpen={!!receipt} onClose={() => setReceipt(null)} title="Venda Realizada">
-          <div style={{ maxWidth: '400px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #e0e0e0' }}>
-              <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 600 }}>Zyrp PDV</h3>
-              <p style={{ margin: 0, color: '#757575', fontSize: '0.875rem' }}>Cupom Não Fiscal</p>
-            </div>
-            <div style={{ fontSize: '0.875rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>Venda</span><strong>#{String(receipt.id).slice(0, 8)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>Data</span><span>{new Date(receipt.created_at).toLocaleString('pt-BR')}</span>
-              </div>
-              <div style={{ borderTop: '1px solid #e0e0e0', borderBottom: '1px solid #e0e0e0', padding: '16px 0', margin: '16px 0' }}>
-                {receipt.items?.map((item: any) => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', marginBottom: '8px', fontSize: '0.875rem' }}>
-                    <span>
-                      <span>{item.product?.name || 'Produto'}</span>
-                      <span style={{ marginLeft: '6px', color: '#757575' }}>
-                        x{formatReceiptQuantity(item.quantity)}
-                      </span>
-                    </span>
-                    <span>R$ {Number(item.line_total).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>Total</span>
-                <span style={{ fontWeight: 600, color: '#1976d2' }}>R$ {Number(receipt.net_total).toFixed(2)}</span>
-              </div>
-              <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e0e0e0', color: '#757575', fontSize: '0.75rem' }}>
-                Obrigado pela preferência!
-              </div>
-              <Button variant="primary" fullWidth onClick={handlePrintReceipt} style={{ marginTop: '24px' }}>
-                Imprimir Cupom
-              </Button>
-              {printMessage && (
-                <p style={{ margin: '12px 0 0', color: '#2e7d32', fontSize: '0.75rem', textAlign: 'center' }}>
-                  {printMessage}
-                </p>
-              )}
-            </div>
-          </div>
-        </Modal>
+      {confirmationSale && (
+        <SaleConfirmationToast
+          saleId={confirmationSale.id}
+          saleNumber={confirmationSale.saleNumber}
+          hasFiscalConfig={false}
+          onPrintFiscal={handlePrintFiscal}
+          onPrintBalcao={handlePrintBalcao}
+          onClose={() => setConfirmationSale(null)}
+        />
       )}
     </div>
   );

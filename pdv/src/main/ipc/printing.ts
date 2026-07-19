@@ -21,6 +21,29 @@ function projectRoot(): string {
 
 export function setupPrintingHandlers() {
   ipcMain.handle('printing:receipt', async (_event, payload: PrintReceiptPayload) => {
+    return handlePrint(payload);
+  });
+
+  ipcMain.handle('printing:fiscal', async (_event, payload: PrintReceiptPayload) => {
+    const header = `
+      <div style="text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #333">
+        <h2 style="margin:0;font-size:1rem">CUPOM FISCAL</h2>
+        <small style="color:#666">Documento Fiscal Eletrônico</small>
+      </div>`;
+    return handlePrint({ html: header + payload.html, fileName: payload.fileName });
+  });
+
+  ipcMain.handle('printing:balcao', async (_event, payload: PrintReceiptPayload) => {
+    const header = `
+      <div style="text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #333">
+        <h2 style="margin:0;font-size:1rem">CUPOM BALCÃO</h2>
+        <small style="color:#666">Comprovante Não Fiscal</small>
+      </div>`;
+    return handlePrint({ html: header + payload.html, fileName: payload.fileName });
+  });
+}
+
+async function handlePrint(payload: PrintReceiptPayload) {
     const safeFileName = sanitizeFileName(payload.fileName);
     const htmlPath = join(projectRoot(), `${safeFileName}.html`);
     const pdfPath = join(projectRoot(), `${safeFileName}.pdf`);
@@ -82,5 +105,5 @@ export function setupPrintingHandlers() {
     } finally {
       printWindow?.close();
     }
-  });
-}
+  }
+

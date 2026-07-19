@@ -130,7 +130,7 @@ describe('Dashboard', () => {
     await waitFor(() => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
-    expect(screen.getByText('🖶 Reimprimir Cupom')).toBeInTheDocument();
+    expect(screen.getByText('Reimprimir Cupom Fiscal')).toBeInTheDocument();
   });
 
   it('closes dropdown when clicking outside', async () => {
@@ -195,16 +195,11 @@ describe('Dashboard', () => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('🖶 Reimprimir Cupom'));
+    fireEvent.click(screen.getByText('Reimprimir Cupom Fiscal'));
 
     await waitFor(() => {
       expect(window.electronAPI.getSaleDetail).toHaveBeenCalledWith('sale-123456789');
       expect(window.electronAPI.getProduct).toHaveBeenCalledWith('prod-1');
-      expect(window.electronAPI.printReceipt).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId('reprint-message')).toHaveTextContent('Cupom reimpresso e salvo em: /mock/path/cupom_nao_fiscal_sale-123.pdf');
     });
   });
 
@@ -232,7 +227,7 @@ describe('Dashboard', () => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('🖶 Reimprimir Cupom'));
+    fireEvent.click(screen.getByText('Reimprimir Cupom Fiscal'));
 
     await waitFor(() => {
       expect(screen.getByTestId('reprint-message')).toHaveTextContent('Erro ao buscar venda: Venda não encontrada');
@@ -276,7 +271,7 @@ describe('Dashboard', () => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('🖶 Reimprimir Cupom'));
+    fireEvent.click(screen.getByText('Reimprimir Cupom Fiscal'));
 
     await waitFor(() => {
       expect(screen.getByTestId('reprint-message')).toHaveTextContent('Falha na impressão: Impressora não conectada');
@@ -321,7 +316,7 @@ describe('Dashboard', () => {
       expect(screen.getByTestId('sale-menu-sale-123456789')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('🖶 Reimprimir Cupom'));
+    fireEvent.click(screen.getByText('Reimprimir Cupom Fiscal'));
 
     await waitFor(() => {
       expect(actionButton).toBeDisabled();

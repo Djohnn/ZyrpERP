@@ -73,7 +73,7 @@ export function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuSaleId]);
 
-  const handleReprint = useCallback(async (saleId: string) => {
+  const handleReprint = useCallback(async (saleId: string, type: 'fiscal' | 'balcao') => {
     setMenuSaleId(null);
     setReprinting(saleId);
     setReprintMessage('');
@@ -86,7 +86,6 @@ export function Dashboard() {
       }
       const sale = detailResult.data;
 
-      // Enrich items with product names (SaleSerializer only returns product UUID)
       const itemsWithNames = await Promise.all(
         (sale.items || []).map(async (item: any) => {
           if (typeof item.product === 'object' && item.product?.name) return item;
@@ -99,9 +98,15 @@ export function Dashboard() {
       );
 
       const html = buildReceiptHtml({ ...sale, items: itemsWithNames });
-      const fileName = `cupom_nao_fiscal_${String(sale.id).slice(0, 8)}`;
+      const label = type === 'fiscal' ? 'fiscal' : 'balcao';
+      const fileName = `cupom_${label}_${String(sale.id).slice(0, 8)}`;
 
-      const printResult = await electronAPI.printReceipt({ html, fileName });
+      const printFn = type === 'fiscal'
+        ? electronAPI.printFiscalReceipt
+        : electronAPI.printBalcaoReceipt;
+      const fallbackPrint = electronAPI.printReceipt;
+
+      const printResult = await (printFn || fallbackPrint)({ html, fileName });
       if (printResult?.success) {
         setReprintMessage(`Cupom reimpresso e salvo em: ${printResult.savedPath}`);
       } else {
@@ -273,7 +278,7 @@ export function Dashboard() {
                         >
                           <button
                             type="button"
-                            onClick={() => handleReprint(sale.id)}
+                            onClick={() => handleReprint(sale.id, 'fiscal')}
                             style={{
                               display: 'block',
                               width: '100%',
@@ -286,7 +291,24 @@ export function Dashboard() {
                               color: '#1976d2',
                             }}
                           >
-                            🖶 Reimprimir Cupom
+                            Reimprimir Cupom Fiscal
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReprint(sale.id, 'balcao')}
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              padding: '12px 16px',
+                              background: 'none',
+                              border: 'none',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '0.875rem',
+                              color: '#1976d2',
+                            }}
+                          >
+                            Reimprimir Cupom Balcão
                           </button>
                         </div>
                       )}

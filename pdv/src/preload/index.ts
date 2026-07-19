@@ -47,6 +47,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSaleReceipt: (saleId: string) => ipcRenderer.invoke('sale:receipt', saleId),
   printReceipt: (data: { html: string; fileName: string }) =>
     ipcRenderer.invoke('printing:receipt', data),
+  printFiscalReceipt: (data: { html: string; fileName: string }) =>
+    ipcRenderer.invoke('printing:fiscal', data),
+  printBalcaoReceipt: (data: { html: string; fileName: string }) =>
+    ipcRenderer.invoke('printing:balcao', data),
 
   // Catalog
   searchProducts: (query: string) => ipcRenderer.invoke('catalog:search-products', query),

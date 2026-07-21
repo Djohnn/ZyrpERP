@@ -765,7 +765,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 9 — Devoluções, Cancelamentos e Estornos
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-21.
 **Objetivo:** completar o ciclo pós-venda com fatos compensatórios auditáveis.
 **Entregável:** devolução parcial/total, cancelamento, reentrada de estoque, reembolso/estorno e integração fiscal quando aplicável.
 
@@ -775,30 +775,30 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 9.1 Domínio pós-venda
 
-- [ ] Criar modelos de devolução, item devolvido, reembolso e cancelamento.
-- [ ] Garantir venda confirmada imutável.
-- [ ] Bloquear devolução acima da quantidade vendida líquida.
+- [x] Criar modelos de devolução, item devolvido, reembolso e cancelamento.
+- [x] Garantir venda confirmada imutável.
+- [x] Bloquear devolução acima da quantidade vendida líquida.
 
 #### 9.2 Serviços transacionais
 
-- [ ] Implementar devolução parcial/total idempotente.
-- [ ] Reentrar estoque por movimento auditável.
-- [ ] Registrar reembolso em dinheiro, Pix ou cartão externo.
-- [ ] Implementar cancelamento total com compensações necessárias.
+- [x] Implementar devolução parcial/total idempotente.
+- [x] Reentrar estoque por movimento auditável.
+- [x] Registrar reembolso em dinheiro, Pix ou cartão externo.
+- [x] Implementar cancelamento total com compensações necessárias.
 
 #### 9.3 Fiscal e API
 
-- [ ] Solicitar cancelamento fiscal quando documento autorizado permitir.
-- [ ] Expor endpoints de devolução, cancelamento e consulta.
-- [ ] Retornar Problem Details para erros de regra.
-- [ ] Testar isolamento cross-tenant.
+- [~] Solicitar cancelamento fiscal quando documento autorizado permitir — *decidido: on-demand, nunca automático; operador solicita manualmente via interface futura.*
+- [x] Expor endpoints de devolução, cancelamento e consulta.
+- [x] Retornar Problem Details para erros de regra.
+- [x] Testar isolamento cross-tenant.
 
 #### 9.4 Qualidade e aceite
 
-- [ ] Criar testes de models, services e API.
-- [ ] Executar suíte focada e suíte completa.
-- [ ] Registrar evidências no relatório final da Sprint 9.
-- [ ] Criar commit final `feat: sprint 9 - devolucoes cancelamentos estornos`.
+- [x] Criar testes de models, services e API.
+- [x] Executar suíte focada e suíte completa.
+- [x] Registrar evidências no relatório final da Sprint 9.
+- [x] Criar commit final `feat: sprint 9 - devolucoes cancelamentos estornos`.
 
 ### Sprint 10 — Compras, Recebimento e Contas a Pagar
 

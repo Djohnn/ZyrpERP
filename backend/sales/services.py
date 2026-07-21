@@ -8,9 +8,20 @@ from django.utils import timezone
 
 from audit.services import create_audit_record
 from catalog.services.pricing import resolve_effective_price
-from inventory.services import create_issue
+from inventory.models import StockLocation, StockMovement
+from inventory.services import create_issue, create_receipt
 from outbox.services import create_outbox_message
-from sales.models import CashMovement, CashSession, Sale, SaleItem, SalePayment
+from sales.models import (
+    CashMovement,
+    CashSession,
+    Sale,
+    SaleCancellation,
+    SaleItem,
+    SalePayment,
+    SaleRefund,
+    SaleReturn,
+    SaleReturnItem,
+)
 
 
 class DuplicateIdempotencyKey(Exception):
@@ -30,6 +41,14 @@ class PaymentMismatch(Exception):
 
 
 class EmptySale(Exception):
+    pass
+
+
+class InsufficientReturnableQuantity(Exception):
+    pass
+
+
+class SaleAlreadyCancelled(Exception):
     pass
 
 
@@ -354,3 +373,386 @@ def create_counter_sale(
     cash_session.save(update_fields=['expected_amount', 'version', 'updated_at'])
     _emit_sales_event(sale=sale, event_type='sales.sale.confirmed', actor=operator)
     return sale
+
+
+def _emit_return_event(*, sale_return, event_type, actor=None):
+    create_audit_record(
+        actor=actor,
+        action=event_type,
+        resource_type='SaleReturn',
+        resource_id=str(sale_return.id),
+        detail={
+            'sale_id': str(sale_return.sale_id),
+            'status': sale_return.status,
+            'reason': sale_return.reason,
+        },
+        correlation_id=sale_return.idempotency_key or str(sale_return.id),
+        tenant_id=sale_return.tenant_id,
+    )
+    create_outbox_message(
+        event_type=event_type,
+        aggregate_type='SaleReturn',
+        aggregate_id=str(sale_return.id),
+        payload={
+            'sale_return_id': str(sale_return.id),
+            'sale_id': str(sale_return.sale_id),
+            'status': sale_return.status,
+            'reason': sale_return.reason,
+        },
+        correlation_id=sale_return.idempotency_key or str(sale_return.id),
+        tenant_id=sale_return.tenant_id,
+    )
+
+
+def _already_returned_quantity(sale_item):
+    from django.db.models import Sum as ModelSum
+
+    from sales.models import SaleReturnItem
+    agg = SaleReturnItem.all_objects.filter(
+        sale_item=sale_item,
+        sale_return__status__in=['draft', 'completed'],
+    ).aggregate(total=ModelSum('quantity'))
+    return agg['total'] or Decimal('0')
+
+
+@transaction.atomic
+def create_sale_return(
+    *,
+    tenant,
+    sale,
+    items,
+    reason,
+    idempotency_key,
+    actor=None,
+):
+    if not idempotency_key:
+        raise ValueError('Idempotency-Key is required.')
+    if not items:
+        raise ValueError('Return must have at least one item.')
+    if not reason:
+        raise ValueError('Reason is required.')
+
+    raw_payload = {
+        'sale_id': str(sale.id),
+        'items': [
+            {'sale_item_id': item['sale_item_id'], 'quantity': str(item['quantity'])}
+            for item in items
+        ],
+        'reason': reason,
+    }
+    fingerprint = _payload_hash(raw_payload)
+    existing = SaleReturn.all_objects.filter(
+        tenant=tenant,
+        idempotency_key=idempotency_key,
+    ).first()
+    if existing:
+        if existing.payload_hash != fingerprint:
+            raise DuplicateIdempotencyKey(
+                'Idempotency key already used with a different payload.'
+            )
+        return existing
+
+    normalized_items = []
+    for item in items:
+        sale_item_id = item['sale_item_id']
+        quantity = Decimal(str(item['quantity']))
+
+        sale_item = SaleItem.all_objects.filter(
+            tenant=tenant, id=sale_item_id, sale=sale,
+        ).select_related('product', 'unit').first()
+        if sale_item is None:
+            raise ValueError(f'SaleItem {sale_item_id} not found in sale.')
+
+        already_returned = _already_returned_quantity(sale_item)
+        remaining = sale_item.quantity - already_returned
+        if quantity > remaining:
+            raise InsufficientReturnableQuantity(
+                f'Cannot return {quantity} of item {sale_item_id}. '
+                f'Only {remaining} returnable.'
+            )
+        normalized_items.append({
+            'sale_item': sale_item,
+            'product': sale_item.product,
+            'unit': sale_item.unit,
+            'quantity': quantity,
+            'factor': sale_item.factor,
+        })
+
+    sale_return = SaleReturn.all_objects.create(
+        tenant=tenant,
+        sale=sale,
+        reason=reason,
+        status='completed',
+        idempotency_key=idempotency_key,
+        payload_hash=fingerprint,
+    )
+    for index, item in enumerate(normalized_items, start=1):
+        location = None
+        stock_op = item['sale_item'].stock_operation
+        if stock_op:
+            movement = StockMovement.all_objects.filter(operation=stock_op).first()
+            if movement:
+                location = movement.location
+        if location is None:
+            location = StockLocation.all_objects.filter(
+                tenant=tenant, branch=sale.branch, is_primary=True,
+            ).first()
+        create_receipt(
+            tenant,
+            sale.branch,
+            item['product'],
+            location,
+            item['quantity'],
+            item['unit'],
+            item['factor'],
+            idempotency_key=f'{idempotency_key}:stock:{index}',
+            actor=actor,
+            reason=f'Return {sale_return.id} for Sale {sale.id}',
+        )
+        SaleReturnItem.all_objects.create(
+            tenant=tenant,
+            sale_return=sale_return,
+            sale_item=item['sale_item'],
+            quantity=item['quantity'],
+            factor=item['factor'],
+        )
+    _emit_return_event(
+        sale_return=sale_return,
+        event_type='sales.return.created',
+        actor=actor,
+    )
+    return sale_return
+
+
+@transaction.atomic
+def create_sale_refund(
+    *,
+    tenant,
+    sale,
+    method,
+    amount,
+    idempotency_key,
+    sale_return=None,
+    actor=None,
+):
+    if not idempotency_key:
+        raise ValueError('Idempotency-Key is required.')
+    if amount <= 0:
+        raise ValueError('Refund amount must be positive.')
+
+    payload = {
+        'sale_id': str(sale.id),
+        'method': method,
+        'amount': str(amount),
+        'sale_return_id': str(sale_return.id) if sale_return else None,
+    }
+    fingerprint = _payload_hash(payload)
+    existing = SaleRefund.all_objects.filter(
+        tenant=tenant,
+        idempotency_key=idempotency_key,
+    ).first()
+    if existing:
+        if existing.payload_hash != fingerprint:
+            raise DuplicateIdempotencyKey(
+                'Idempotency key already used with a different payload.'
+            )
+        return existing
+
+    refund = SaleRefund.all_objects.create(
+        tenant=tenant,
+        sale=sale,
+        sale_return=sale_return,
+        method=method,
+        amount=amount,
+        status='completed',
+        idempotency_key=idempotency_key,
+        payload_hash=fingerprint,
+    )
+
+    if method == 'cash':
+        cash_session = _open_cash_session_for(tenant, sale.branch, sale.operator)
+        if cash_session is None:
+            raise CashSessionRequired(
+                'An open cash session is required for cash refunds.'
+            )
+        CashMovement.all_objects.create(
+            tenant=tenant,
+            cash_session=cash_session,
+            movement_type='cash_out',
+            amount=amount,
+            payment_method='cash',
+            reference=str(sale.id),
+            notes=f'Refund {refund.id}',
+        )
+        cash_session.expected_amount = _money(cash_session.expected_amount - amount)
+        cash_session.version += 1
+        cash_session.save(update_fields=['expected_amount', 'version', 'updated_at'])
+
+    create_audit_record(
+        actor=actor,
+        action='sales.refund.created',
+        resource_type='SaleRefund',
+        resource_id=str(refund.id),
+        detail={
+            'sale_id': str(sale.id),
+            'method': method,
+            'amount': str(amount),
+        },
+        correlation_id=idempotency_key,
+        tenant_id=tenant.id,
+    )
+    create_outbox_message(
+        event_type='sales.refund.created',
+        aggregate_type='SaleRefund',
+        aggregate_id=str(refund.id),
+        payload={
+            'sale_refund_id': str(refund.id),
+            'sale_id': str(sale.id),
+            'method': method,
+            'amount': str(amount),
+        },
+        correlation_id=idempotency_key,
+        tenant_id=tenant.id,
+    )
+    return refund
+
+
+@transaction.atomic
+def cancel_sale(
+    *,
+    tenant,
+    sale,
+    reason,
+    idempotency_key,
+    actor=None,
+):
+    if not idempotency_key:
+        raise ValueError('Idempotency-Key is required.')
+    if not reason:
+        raise ValueError('Reason is required.')
+
+    payload = {
+        'sale_id': str(sale.id),
+        'reason': reason,
+    }
+    fingerprint = _payload_hash(payload)
+    existing = SaleCancellation.all_objects.filter(
+        tenant=tenant,
+        idempotency_key=idempotency_key,
+    ).first()
+    if existing:
+        if existing.payload_hash != fingerprint:
+            raise DuplicateIdempotencyKey(
+                'Idempotency key already used with a different payload.'
+            )
+        return existing
+
+    if sale.status == 'cancelled':
+        raise SaleAlreadyCancelled('Sale is already cancelled.')
+
+    cancellation = SaleCancellation.all_objects.create(
+        tenant=tenant,
+        sale=sale,
+        reason=reason,
+        status='completed',
+        idempotency_key=idempotency_key,
+        payload_hash=fingerprint,
+    )
+
+    for index, sale_item in enumerate(
+        SaleItem.all_objects.filter(sale=sale).select_related('product', 'unit'),
+        start=1,
+    ):
+        location = None
+        if sale_item.stock_operation_id:
+            movement = StockMovement.all_objects.filter(
+                operation_id=sale_item.stock_operation_id,
+            ).first()
+            if movement:
+                location = movement.location
+        if location is None:
+            location = StockLocation.all_objects.filter(
+                tenant=tenant, branch=sale.branch, is_primary=True,
+            ).first()
+        create_receipt(
+            tenant,
+            sale.branch,
+            sale_item.product,
+            location,
+            sale_item.quantity,
+            sale_item.unit,
+            sale_item.factor,
+            idempotency_key=f'{idempotency_key}:stock:{index}',
+            actor=actor,
+            reason=f'Cancellation {cancellation.id} of Sale {sale.id}',
+        )
+
+    cash_session = sale.cash_session
+    for payment in SalePayment.all_objects.filter(sale=sale):
+        if payment.method == 'cash':
+            SaleRefund.all_objects.create(
+                tenant=tenant,
+                sale=sale,
+                sale_return=None,
+                method='cash',
+                amount=payment.amount,
+                status='completed',
+                idempotency_key=f'{idempotency_key}:refund:{payment.id}',
+            )
+            if cash_session and cash_session.status == 'open':
+                CashMovement.all_objects.create(
+                    tenant=tenant,
+                    cash_session=cash_session,
+                    movement_type='cash_out',
+                    amount=payment.amount,
+                    payment_method='cash',
+                    reference=str(sale.id),
+                    notes=f'Auto refund for cancellation {cancellation.id}',
+                )
+                cash_session.expected_amount = _money(
+                    cash_session.expected_amount - payment.amount
+                )
+                cash_session.version += 1
+                cash_session.save(
+                    update_fields=['expected_amount', 'version', 'updated_at']
+                )
+        else:
+            SaleRefund.all_objects.create(
+                tenant=tenant,
+                sale=sale,
+                sale_return=None,
+                method=payment.method,
+                amount=payment.amount,
+                status='completed',
+                idempotency_key=f'{idempotency_key}:refund:{payment.id}',
+            )
+
+    sale.status = 'cancelled'
+    sale.version += 1
+    sale.save(update_fields=['status', 'version', 'updated_at'])
+
+    create_audit_record(
+        actor=actor,
+        action='sales.sale.cancelled',
+        resource_type='Sale',
+        resource_id=str(sale.id),
+        detail={
+            'cancellation_id': str(cancellation.id),
+            'reason': reason,
+        },
+        correlation_id=idempotency_key,
+        tenant_id=tenant.id,
+    )
+    create_outbox_message(
+        event_type='sales.sale.cancelled',
+        aggregate_type='Sale',
+        aggregate_id=str(sale.id),
+        payload={
+            'sale_id': str(sale.id),
+            'cancellation_id': str(cancellation.id),
+            'reason': reason,
+        },
+        correlation_id=idempotency_key,
+        tenant_id=tenant.id,
+    )
+    return cancellation

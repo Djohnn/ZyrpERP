@@ -1,8 +1,8 @@
 from django.http import Http404
 from rest_framework.generics import CreateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from fiscal.models import FiscalDocument
 from fiscal.serializers import FiscalRequestSerializer, FiscalStatusSerializer

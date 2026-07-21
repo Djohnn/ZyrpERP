@@ -1,4 +1,5 @@
 import time
+
 from django.utils.deprecation import MiddlewareMixin
 
 # Simple in-memory metrics storage (for production, use Redis/Prometheus)
@@ -12,7 +13,7 @@ class MetricsMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
         request._start_time = time.perf_counter()
-        return None
+        return
 
     def process_response(self, request, response):
         if hasattr(request, '_start_time'):

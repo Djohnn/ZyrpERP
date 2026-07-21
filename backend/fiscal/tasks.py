@@ -5,7 +5,6 @@ from django.utils import timezone
 
 from fiscal.models import FiscalDocument
 from fiscal.services import POLLING_INTERVAL, emit_nfce, poll_fiscal_document
-from outbox.handlers import register_handler
 
 logger = logging.getLogger(__name__)
 

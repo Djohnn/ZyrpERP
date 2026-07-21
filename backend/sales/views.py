@@ -8,13 +8,17 @@ from rest_framework.views import APIView
 from catalog.models import Product, Unit
 from inventory.models import StockLocation
 from inventory.services import InsufficientStock
-from sales.models import CashSession, Sale
+from sales.models import CashSession, Sale, SaleReturn
 from sales.permissions import SalesCapabilityPermission
 from sales.serializers import (
     CashSessionSerializer,
     CloseCashSessionSerializer,
     CounterSaleSerializer,
+    CreateSaleCancellationSerializer,
+    CreateSaleReturnSerializer,
     OpenCashSessionSerializer,
+    SaleCancellationSerializer,
+    SaleReturnSerializer,
     SaleSerializer,
     SyncBatchSerializer,
 )
@@ -22,10 +26,14 @@ from sales.services import (
     CashSessionRequired,
     DuplicateIdempotencyKey,
     EmptySale,
+    InsufficientReturnableQuantity,
     OpenCashSessionExists,
     PaymentMismatch,
+    SaleAlreadyCancelled,
+    cancel_sale,
     close_cash_session,
     create_counter_sale,
+    create_sale_return,
     open_cash_session,
 )
 from tenancy.models import Branch
@@ -180,6 +188,10 @@ class SaleViewSet(viewsets.ReadOnlyModelViewSet):
             return _problem(exc, 'cash_session_required', status.HTTP_409_CONFLICT)
         if isinstance(exc, PaymentMismatch):
             return _problem(exc, 'payment_mismatch')
+        if isinstance(exc, InsufficientReturnableQuantity):
+            return _problem(exc, 'insufficient_returnable', status.HTTP_409_CONFLICT)
+        if isinstance(exc, SaleAlreadyCancelled):
+            return _problem(exc, 'sale_already_cancelled', status.HTTP_409_CONFLICT)
         if isinstance(exc, (EmptySale, ValueError)):
             return _problem(exc)
         raise exc
@@ -218,6 +230,69 @@ class SaleViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             SaleSerializer(sale, context=self.get_serializer_context()).data,
             status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=['post'])
+    def returns(self, request, pk=None):
+        serializer = CreateSaleReturnSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            sale = self.get_object()
+            sale_return = create_sale_return(
+                tenant=request.tenant,
+                sale=sale,
+                items=[
+                    {
+                        'sale_item_id': str(item['sale_item_id']),
+                        'quantity': item['quantity'],
+                    }
+                    for item in data['items']
+                ],
+                reason=data['reason'],
+                idempotency_key=_idempotency_key(request),
+                actor=request.user,
+            )
+        except Exception as exc:
+            return self._handle_sales_error(exc)
+        return Response(
+            SaleReturnSerializer(sale_return, context=self.get_serializer_context()).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @returns.mapping.get
+    def list_returns(self, request, pk=None):
+        try:
+            sale = self.get_object()
+        except Exception as exc:
+            return self._handle_sales_error(exc)
+        returns_queryset = SaleReturn.all_objects.filter(
+            tenant=request.tenant, sale=sale,
+        ).prefetch_related('items')
+        return Response(
+            SaleReturnSerializer(returns_queryset, many=True).data,
+        )
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        serializer = CreateSaleCancellationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            sale = self.get_object()
+            cancellation = cancel_sale(
+                tenant=request.tenant,
+                sale=sale,
+                reason=data['reason'],
+                idempotency_key=_idempotency_key(request),
+                actor=request.user,
+            )
+        except Exception as exc:
+            return self._handle_sales_error(exc)
+        return Response(
+            SaleCancellationSerializer(
+                cancellation, context=self.get_serializer_context()
+            ).data,
         )
 
 

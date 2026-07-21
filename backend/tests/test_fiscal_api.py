@@ -180,7 +180,6 @@ def test_request_fiscal_creates_document(monkeypatch, client, fiscal_sale_contex
 
 @pytest.mark.django_db
 def test_request_fiscal_returns_existing_document(client, fiscal_sale_context):
-    from fiscal.models import FiscalDocument
     from fiscal.services import emit_nfce
 
     ctx = fiscal_sale_context

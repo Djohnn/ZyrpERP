@@ -225,6 +225,97 @@ def inv_branch(inv_company, inv_tenant):
 
 
 @pytest.fixture
+def sale_context(django_user_model):
+    from decimal import Decimal
+
+    from django.utils import timezone
+
+    from catalog.models import Product, ProductPrice, Unit
+    from inventory.models import StockLocation
+    from inventory.services import create_receipt
+    from sales.services import create_counter_sale, open_cash_session
+
+    tenant = Tenant.objects.create(name='Sale Tenant', slug='sale-ctx')
+    user = django_user_model.objects.create_user(
+        email='sale-ctx@test.local',
+        password='pass123',
+    )
+    TenantMembership.objects.create(user=user, tenant=tenant, role='admin', is_active=True)
+
+    def _create():
+        unit = Unit.all_objects.create(tenant=tenant, symbol='UN', name='Unidade')
+        product = Product.all_objects.create(
+            tenant=tenant,
+            sku='SALE-CTX',
+            name='Produto Venda',
+            base_unit=unit,
+        )
+        ProductPrice.all_objects.create(
+            tenant=tenant,
+            product=product,
+            amount=Decimal('10.00'),
+            valid_from=timezone.now(),
+        )
+        company = Company.all_objects.create(tenant=tenant, name='Empresa Venda')
+        branch = Branch.all_objects.create(
+            tenant=tenant,
+            company=company,
+            name='Filial Venda',
+        )
+        location = StockLocation.all_objects.create(
+            tenant=tenant,
+            branch=branch,
+            code='BALCAO',
+            name='Balcao',
+            is_primary=True,
+        )
+        create_receipt(
+            tenant,
+            branch,
+            product,
+            location,
+            Decimal('5'),
+            unit,
+            Decimal('1'),
+            idempotency_key='sale-ctx-stock',
+            actor=user,
+            reason='seed sale ctx stock',
+        )
+        open_cash_session(
+            tenant=tenant,
+            branch=branch,
+            operator=user,
+            opening_amount=Decimal('50.00'),
+            idempotency_key='sale-ctx-cash-open',
+        )
+        sale = create_counter_sale(
+            tenant=tenant,
+            branch=branch,
+            operator=user,
+            stock_location=location,
+            items=[{
+                'product': product,
+                'unit': unit,
+                'quantity': Decimal('2'),
+                'factor': Decimal('1'),
+            }],
+            payments=[{'method': 'cash', 'amount': Decimal('20.00')}],
+            idempotency_key='sale-ctx-sale',
+        )
+        return {
+            'tenant': tenant,
+            'user': user,
+            'unit': unit,
+            'product': product,
+            'branch': branch,
+            'location': location,
+            'sale': sale,
+        }
+
+    return _run_in_tenant(tenant, _create)
+
+
+@pytest.fixture
 def fiscal_sale_context(django_user_model):
     from decimal import Decimal
 

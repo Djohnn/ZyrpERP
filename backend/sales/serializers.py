@@ -3,7 +3,17 @@ from decimal import Decimal
 from django.db.models import Count, Sum
 from rest_framework import serializers
 
-from sales.models import CashMovement, CashSession, Sale, SaleItem, SalePayment
+from sales.models import (
+    CashMovement,
+    CashSession,
+    Sale,
+    SaleCancellation,
+    SaleItem,
+    SalePayment,
+    SaleRefund,
+    SaleReturn,
+    SaleReturnItem,
+)
 
 
 def _money(value):
@@ -352,3 +362,47 @@ class SyncBatchSerializer(serializers.Serializer):
         if len(value) > 100:
             raise serializers.ValidationError('No more than 100 operations allowed')
         return value
+
+
+class SaleReturnItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SaleReturnItem
+        fields = ['id', 'sale_item', 'quantity', 'factor']
+        read_only_fields = fields
+
+
+class SaleReturnSerializer(serializers.ModelSerializer):
+    items = SaleReturnItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SaleReturn
+        fields = ['id', 'sale', 'reason', 'status', 'items', 'created_at']
+        read_only_fields = fields
+
+
+class ReturnItemInputSerializer(serializers.Serializer):
+    sale_item_id = serializers.UUIDField()
+    quantity = serializers.DecimalField(max_digits=18, decimal_places=6)
+
+
+class CreateSaleReturnSerializer(serializers.Serializer):
+    items = ReturnItemInputSerializer(many=True, min_length=1)
+    reason = serializers.CharField(min_length=1)
+
+
+class SaleRefundSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SaleRefund
+        fields = ['id', 'sale', 'sale_return', 'method', 'amount', 'status', 'created_at']
+        read_only_fields = fields
+
+
+class SaleCancellationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SaleCancellation
+        fields = ['id', 'sale', 'reason', 'status', 'created_at']
+        read_only_fields = fields
+
+
+class CreateSaleCancellationSerializer(serializers.Serializer):
+    reason = serializers.CharField(min_length=1)

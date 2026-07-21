@@ -44,6 +44,7 @@ class SupplierSerializer(FullCleanModelSerializer):
         model = Supplier
         fields = [
             'id',
+            'person',
             'name',
             'cnpj',
             'phone',

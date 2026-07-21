@@ -35,7 +35,7 @@ class PlugNotasAdapter(FiscalProvider):
         }
 
     def _build_emit_payload(self, emitter, document, items, payments):
-        return [{
+        payload = {
             'idIntegracao': str(document.idempotency_key),
             'natureza': 'VENDA',
             'emitente': {
@@ -87,7 +87,15 @@ class PlugNotasAdapter(FiscalProvider):
                 }
                 for payment in payments
             ],
-        }]
+        }
+        recipient = getattr(document, 'recipient', None)
+        if recipient:
+            payload['destinatario'] = {
+                'cpfCnpj': recipient['cpf_cnpj'],
+                'razaoSocial': recipient['name'],
+                'endereco': recipient['address'],
+            }
+        return [payload]
 
     def emit(self, tenant, emitter, document, items, payments):
         response = requests.post(

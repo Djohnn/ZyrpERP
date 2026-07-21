@@ -310,7 +310,7 @@ class SaleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sale
         fields = [
-            'id', 'branch', 'cash_session', 'operator', 'status',
+            'id', 'branch', 'cash_session', 'operator', 'customer', 'status',
             'gross_total', 'discount_total', 'net_total', 'created_at',
             'version', 'items', 'payments',
         ]
@@ -339,6 +339,7 @@ class CounterSalePaymentInputSerializer(serializers.Serializer):
 class CounterSaleSerializer(serializers.Serializer):
     branch = serializers.UUIDField()
     stock_location = serializers.UUIDField()
+    customer = serializers.UUIDField(required=False, allow_null=True)
     items = CounterSaleItemInputSerializer(many=True)
     payments = CounterSalePaymentInputSerializer(many=True)
 

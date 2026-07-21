@@ -21,3 +21,14 @@ Exportação preserva classificação. Cópias de produção não são usadas em
 
 Copilotos futuros permanecem somente leitura. Escritas financeiras, fiscais, comerciais ou de
 estoque exigem aprovação humana e workflow transacional fora do contexto do modelo.
+
+## Pessoas e LGPD
+
+| Dado | Classe | Controle |
+|---|---|---|
+| Nome, nome empresarial e papéis | Confidential | tenant scope e acesso autenticado |
+| CPF/CNPJ, e-mail, telefone e endereço | Restricted | normalização, retenção, auditoria e proibição em logs/eventos |
+| Consentimento e revogação | Restricted | histórico imutável, finalidade explícita e tenant scope |
+
+Eventos de pessoas carregam somente identificadores técnicos e papéis. Documentos, contatos e
+endereços não podem aparecer em logs, detalhes de auditoria ou payloads de Outbox.

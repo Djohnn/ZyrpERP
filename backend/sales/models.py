@@ -131,6 +131,10 @@ class Sale(VersionedSalesModel):
         on_delete=models.PROTECT,
         related_name='sales',
     )
+    customer = models.ForeignKey(
+        'people.Person', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='sales',
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='confirmed')
     gross_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     discount_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
@@ -163,6 +167,8 @@ class Sale(VersionedSalesModel):
             raise ValidationError(
                 {'cash_session': 'Cash session must belong to the same tenant.'}
             )
+        if self.customer_id and self.customer.tenant_id != self.tenant_id:
+            raise ValidationError({'customer': 'Customer must belong to the same tenant.'})
 
 
 class SaleItem(VersionedSalesModel):

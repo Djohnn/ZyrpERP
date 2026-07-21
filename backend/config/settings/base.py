@@ -42,6 +42,7 @@ LOCAL_APPS = [
     'inventory',
     'sales',
     'fiscal',
+    'monitoring',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -74,6 +75,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'config.tenant_middleware.TenantMiddleware',
     'config.log_context.RequestContextLogMiddleware',
+    'monitoring.middleware.MetricsMiddleware',
 ]
 
 CSRF_FAILURE_VIEW = 'config.views.csrf_failure'

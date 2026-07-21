@@ -258,6 +258,7 @@ def create_counter_sale(
     items,
     payments,
     idempotency_key,
+    customer=None,
 ):
     if not idempotency_key:
         raise ValueError('Idempotency-Key is required.')
@@ -274,6 +275,7 @@ def create_counter_sale(
         'stock_location': stock_location,
         'items': normalized_items,
         'payments': normalized_payments,
+        'customer': customer,
     }
     fingerprint = _payload_hash(payload)
     existing = Sale.all_objects.filter(
@@ -320,6 +322,7 @@ def create_counter_sale(
         branch=branch,
         cash_session=cash_session,
         operator=operator,
+        customer=customer,
         gross_total=gross_total,
         discount_total=discount_total,
         net_total=net_total,

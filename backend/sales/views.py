@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from catalog.models import Product, Unit
 from inventory.models import StockLocation
 from inventory.services import InsufficientStock
+from people.models import Person
 from sales.models import CashSession, Sale, SaleReturn
 from sales.permissions import SalesCapabilityPermission
 from sales.serializers import (
@@ -224,6 +225,10 @@ class SaleViewSet(viewsets.ReadOnlyModelViewSet):
                 ],
                 payments=data['payments'],
                 idempotency_key=_idempotency_key(request),
+                customer=(
+                    _tenant_get(Person, request.tenant, data['customer'])
+                    if data.get('customer') else None
+                ),
             )
         except Exception as exc:
             return self._handle_sales_error(exc)

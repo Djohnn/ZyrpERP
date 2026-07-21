@@ -880,7 +880,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 12 — Pessoas, Clientes e Parceiros
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-21.
 **Objetivo:** criar cadastro operacional de pessoas PF/PJ para clientes, fornecedores, transportadores e contatos.
 **Entregável:** pessoas tenant-scoped com documentos, endereços, contatos, papéis, consentimentos e integração com vendas/compras/fiscal.
 
@@ -890,31 +890,31 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 12.1 Fundação de pessoas
 
-- [ ] Criar app `people`.
-- [ ] Criar modelos `Person`, `PersonRole`, `PersonDocument`, `PersonAddress`, `PersonContact` e `ConsentRecord`.
-- [ ] Normalizar CPF/CNPJ, e-mail, telefone e endereço.
-- [ ] Garantir unicidade de documento ativo por tenant.
+- [x] Criar app `people`.
+- [x] Criar modelos `Person`, `PersonRole`, `PersonDocument`, `PersonAddress`, `PersonContact` e `ConsentRecord`.
+- [x] Normalizar CPF/CNPJ, e-mail, telefone e endereço.
+- [x] Garantir unicidade de documento ativo por tenant.
 
 #### 12.2 Serviços, auditoria e LGPD
 
-- [ ] Implementar criação/atualização/desativação de pessoa.
-- [ ] Preservar histórico por exclusão lógica.
-- [ ] Auditar alterações sensíveis.
-- [ ] Atualizar classificação de dados pessoais.
+- [x] Implementar criação/atualização/desativação de pessoa.
+- [x] Preservar histórico por exclusão lógica.
+- [x] Auditar alterações sensíveis.
+- [x] Atualizar classificação de dados pessoais.
 
 #### 12.3 Integrações e API
 
-- [ ] Expor APIs de pessoas, endereços, contatos e consentimentos.
-- [ ] Permitir venda com cliente identificado sem bloquear venda anônima.
-- [ ] Relacionar fornecedor de compras a `Person`.
-- [ ] Preparar dados de destinatário fiscal.
+- [x] Expor APIs de pessoas, endereços, contatos e consentimentos.
+- [x] Permitir venda com cliente identificado sem bloquear venda anônima.
+- [x] Relacionar fornecedor de compras a `Person`.
+- [x] Preparar dados de destinatário fiscal.
 
 #### 12.4 Qualidade e aceite
 
-- [ ] Criar testes de models, services, API e integrações.
-- [ ] Testar isolamento cross-tenant.
-- [ ] Registrar evidências no relatório final da Sprint 12.
-- [ ] Criar commit final `feat: sprint 12 - pessoas clientes parceiros`.
+- [x] Criar testes de models, services, API e integrações.
+- [x] Testar isolamento cross-tenant.
+- [x] Registrar evidências no relatório final da Sprint 12.
+- [x] Criar commit final `feat: sprint 12 - pessoas clientes parceiros`.
 
 ### Sprint 13 — Pagamentos Integrados e Conciliação
 

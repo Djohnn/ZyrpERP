@@ -90,6 +90,30 @@ def build_payment_dict(payment):
     }
 
 
+def build_recipient_dict(person):
+    if person is None:
+        return None
+    from people.models import PersonAddress, PersonDocument
+    document = PersonDocument.all_objects.filter(
+        person=person, is_active=True, document_type__in=['CPF', 'CNPJ'],
+    ).first()
+    address = PersonAddress.all_objects.filter(
+        person=person, is_active=True, address_type='fiscal',
+    ).order_by('-is_primary', 'created_at').first()
+    return {
+        'name': person.name,
+        'cpf_cnpj': document.value if document else '',
+        'address': ({
+            'street': address.street,
+            'number': address.number,
+            'city': address.city,
+            'state': address.state,
+            'postal_code': address.postal_code,
+            'country': address.country,
+        } if address else None),
+    }
+
+
 # ── Sprint 12 — Purchasing fiscal reconciliation ──────────────
 
 
@@ -235,6 +259,7 @@ def emit_document(doc):
 
     payments = [build_payment_dict(payment) for payment in doc.sale.payments.all()]
     provider = _resolve_provider(emitter.provider)
+    doc.recipient = build_recipient_dict(doc.sale.customer)
 
     try:
         result = provider.emit(doc.tenant, emitter, doc, items, payments)

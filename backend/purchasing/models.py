@@ -13,6 +13,10 @@ class VersionedPurchasingModel(TimeStampedModel, TenantScopedModel):
 
 
 class Supplier(VersionedPurchasingModel):
+    person = models.ForeignKey(
+        'people.Person', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='supplier_profiles',
+    )
     name = models.CharField(max_length=200)
     cnpj = models.CharField(max_length=18, blank=True, default='')
     phone = models.CharField(max_length=20, blank=True, default='')
@@ -26,6 +30,10 @@ class Supplier(VersionedPurchasingModel):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        if self.person_id and self.person.tenant_id != self.tenant_id:
+            raise ValidationError('Person must belong to the same tenant.')
 
 
 class PurchaseOrder(VersionedPurchasingModel):

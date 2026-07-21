@@ -1029,6 +1029,76 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [ ] Registrar evidências no relatório final da Sprint 15.
 - [ ] Criar commit final `feat: sprint 15 - saas comercial admin`.
 
+### Sprint 16 — Fundação Frontend e Contrato da API
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-21.
+**Objetivo:** criar a aplicação React/Vite/TypeScript e tornar a API segura e tipada para consumo no navegador.
+
+**Especificação:** [Design da Sprint 16](superpowers/specs/2026-07-21-sprint-16-frontend-foundation-api-contract-design.md)
+
+**Plano:** [Plano de implementação da Sprint 16](superpowers/plans/2026-07-21-sprint-16-frontend-foundation-api-contract-implementation-plan.md)
+
+- [ ] Configurar OpenAPI, CORS, CSRF e cliente TypeScript gerado.
+- [ ] Implementar login por sessão, MFA e seleção de tenant.
+- [ ] Criar shell acessível, estados de erro e gates frontend no CI.
+- [ ] Validar autenticação e troca de tenant com Playwright.
+
+### Sprint 17 — Shell Administrativo, Tenancy e Acessos
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-21.
+**Objetivo:** entregar painel administrativo para empresas, filiais, membros, convites, MFA e dispositivos PDV.
+
+**Especificação:** [Design da Sprint 17](superpowers/specs/2026-07-21-sprint-17-admin-shell-tenancy-design.md)
+
+**Plano:** [Plano de implementação da Sprint 17](superpowers/plans/2026-07-21-sprint-17-admin-shell-tenancy-implementation-plan.md)
+
+- [ ] Criar dashboard e contexto de empresa/filial.
+- [ ] Gerenciar empresas, filiais, membros e convites.
+- [ ] Gerenciar política MFA e dispositivos.
+- [ ] Validar papéis e isolamento cross-tenant nos três browsers.
+
+### Sprint 18 — Catálogo, Estoque e Compras Web
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-21.
+**Objetivo:** disponibilizar jornadas web de catálogo, estoque, fornecedores, pedidos e recebimentos.
+
+**Especificação:** [Design da Sprint 18](superpowers/specs/2026-07-21-sprint-18-catalog-inventory-purchasing-web-design.md)
+
+**Plano:** [Plano de implementação da Sprint 18](superpowers/plans/2026-07-21-sprint-18-catalog-inventory-purchasing-web-implementation-plan.md)
+
+- [ ] Implementar catálogo e preços.
+- [ ] Implementar saldos, lotes e movimentações de estoque.
+- [ ] Implementar fornecedores, pedidos, recebimentos e devoluções.
+- [ ] Validar jornada vertical produto → compra → recebimento.
+
+### Sprint 19 — Gestão de PDV, Pessoas e Financeiro Web
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-21.
+**Objetivo:** supervisionar operações do PDV Electron e seus efeitos sem criar um segundo ponto de venda.
+
+**Especificação:** [Design da Sprint 19](superpowers/specs/2026-07-21-sprint-19-pdv-management-people-financial-design.md)
+
+**Plano:** [Plano de implementação da Sprint 19](superpowers/plans/2026-07-21-sprint-19-pdv-management-people-financial-implementation-plan.md)
+
+- [ ] Consultar vendas, caixas, operadores e dispositivos do PDV.
+- [ ] Executar devoluções, cancelamentos e estornos autorizados.
+- [ ] Gerenciar pessoas com controles de PII.
+- [ ] Gerenciar obrigações, liquidações, fluxo de caixa e relatórios.
+
+### Sprint 20 — Fiscal, Pagamentos, Observabilidade e Aceite E2E
+
+**Estado:** Planejada; spec e plan preparados em 2026-07-21.
+**Objetivo:** concluir o painel web e validar o release administrativo de ponta a ponta.
+
+**Especificação:** [Design da Sprint 20](superpowers/specs/2026-07-21-sprint-20-fiscal-payments-observability-e2e-design.md)
+
+**Plano:** [Plano de implementação da Sprint 20](superpowers/plans/2026-07-21-sprint-20-fiscal-payments-observability-e2e-implementation-plan.md)
+
+- [ ] Implementar gestão fiscal e downloads autorizados.
+- [ ] Implementar transações e conciliação de pagamentos.
+- [ ] Implementar painel de observabilidade operacional.
+- [ ] Aprovar E2E, acessibilidade, segurança e orçamento de bundle.
+
 ---
 
 ## Registro de execução

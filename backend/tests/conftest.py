@@ -231,6 +231,7 @@ def fiscal_sale_context(django_user_model):
     from django.utils import timezone
 
     from catalog.models import Product, ProductPrice, Unit
+    from fiscal.models import FiscalEmitter
     from inventory.models import StockLocation
     from inventory.services import create_receipt
     from sales.services import create_counter_sale, open_cash_session
@@ -266,6 +267,13 @@ def fiscal_sale_context(django_user_model):
             tenant=tenant,
             company=company,
             name='Filial Fiscal',
+        )
+        FiscalEmitter.all_objects.create(
+            tenant=tenant,
+            branch=branch,
+            provider=FiscalEmitter.PROVIDER_PLUGNOTAS,
+            cpf_cnpj='12345678000199',
+            registered_at_provider=True,
         )
         location = StockLocation.all_objects.create(
             tenant=tenant,

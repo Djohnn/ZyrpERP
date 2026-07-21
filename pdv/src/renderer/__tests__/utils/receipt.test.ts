@@ -36,8 +36,7 @@ describe('buildReceiptHtml', () => {
         { product: { name: 'Coca-Cola' }, quantity: 2, line_total: '10.00' },
       ],
     });
-    // Title uses HTML entity for ã
-    expect(html).toContain('<title>Zyrp PDV - Cupom N&atilde;o Fiscal #sale-123</title>');
+    expect(html).toContain('<title>Zyrp PDV - Cupom Não Fiscal #sale-123</title>');
     expect(html).toContain('Coca-Cola');
     expect(html).toContain('x2.0');
     expect(html).toContain('R$ 10.00');

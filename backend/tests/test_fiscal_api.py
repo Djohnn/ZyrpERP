@@ -240,7 +240,7 @@ def test_fiscal_config_returns_false_when_no_emitter(client, fiscal_sale_context
     ctx = fiscal_sale_context
     client.force_login(ctx['user'])
 
-    FiscalEmitter.all_objects.filter(branch=ctx['branch']).update(is_active=False)
+    FiscalEmitter.all_objects.filter(branch=ctx['branch']).update(registered_at_provider=False)
 
     response = client.get(
         f'/api/v1/fiscal/config/?branch={ctx["branch"].id}',

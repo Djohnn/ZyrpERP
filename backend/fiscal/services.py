@@ -28,15 +28,41 @@ def _resolve_provider(provider_name: str):
 
 
 def resolve_emitter(branch):
-    return FiscalEmitter.all_objects.filter(
-        branch=branch,
-        registered_at_provider=True,
-        is_active=True,
-    ).first()
+    from django.db import connection
+    with connection.cursor() as c:
+        c.execute(
+            "SELECT id, tenant_id, branch_id, provider, cpf_cnpj, ie, registered_at_provider, "
+            "registration_source, created_at, updated_at "
+            "FROM fiscal_fiscalemitter WHERE branch_id=%s AND registered_at_provider=true LIMIT 1",
+            [str(branch.id)]
+        )
+        row = c.fetchone()
+    if not row:
+        return None
+    return FiscalEmitter(
+        id=row[0], tenant_id=row[1], branch_id=row[2], provider=row[3],
+        cpf_cnpj=row[4], ie=row[5], registered_at_provider=row[6],
+        registration_source=row[7], created_at=row[8], updated_at=row[9],
+    )
 
 
 def resolve_product_config(product):
-    return FiscalProductConfig.all_objects.filter(product=product, is_active=True).first()
+    from django.db import connection
+    with connection.cursor() as c:
+        c.execute(
+            "SELECT id, tenant_id, product_id, cst_icms, cst_pis, cst_cofins, "
+            "aliquota_icms, origem, created_at, updated_at "
+            "FROM fiscal_fiscalproductconfig WHERE product_id=%s LIMIT 1",
+            [str(product.id)]
+        )
+        row = c.fetchone()
+    if not row:
+        return None
+    return FiscalProductConfig(
+        id=row[0], tenant_id=row[1], product_id=row[2], cst_icms=row[3],
+        cst_pis=row[4], cst_cofins=row[5], aliquota_icms=row[6], origem=row[7],
+        created_at=row[8], updated_at=row[9],
+    )
 
 
 def build_item_dict(item):

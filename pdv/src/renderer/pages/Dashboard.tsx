@@ -83,7 +83,7 @@ export function Dashboard() {
       await Promise.all(
         batch.map(async (sale: any) => {
           try {
-            const resp = await fetch(`/api/v1/fiscal/sales/${sale.id}/fiscal-status/`, { headers });
+            const resp = await fetch(`/api/v1/sales/${sale.id}/fiscal-status/`, { headers });
             if (resp.ok) {
               const data = await resp.json();
               results[sale.id] = data;
@@ -129,7 +129,7 @@ export function Dashboard() {
       if (type === 'fiscal') {
         let fiscalInfo = {};
         try {
-          const statusResp = await fetch(`/api/v1/fiscal/sales/${saleId}/fiscal-status/`, { headers: authHeaders() });
+          const statusResp = await fetch(`/api/v1/sales/${saleId}/fiscal-status/`, { headers: authHeaders() });
           if (statusResp.ok) {
             const statusData = await statusResp.json();
             if (statusData.fiscal_status === 'CONCLUDED') {
@@ -168,15 +168,25 @@ export function Dashboard() {
     setMenuSaleId(null);
     setReprintMessage('');
     try {
-      const resp = await fetch(`/api/v1/fiscal/sales/${saleId}/request-fiscal/`, {
+      const resp = await fetch(`/api/v1/sales/${saleId}/request-fiscal/`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Idempotency-Key': crypto.randomUUID() },
       });
-      if (resp.status === 201) {
-        setReprintMessage('✅ Emissão fiscal solicitada com sucesso!');
+      const data = await resp.json();
+      if (!resp.ok) {
+        setReprintMessage(`❌ ${data.detail || 'Erro ao solicitar emissão fiscal.'}`);
+        return;
+      }
+      const fiscalStatus = data.fiscal_status;
+      const errorDetail = data.error_detail || '';
+      if (fiscalStatus === 'FAILED' || fiscalStatus === 'REJECTED') {
+        setReprintMessage(`❌ Emissão fiscal falhou: ${errorDetail || 'erro desconhecido'}`);
+      } else if (fiscalStatus === 'CONCLUDED') {
+        setReprintMessage('✅ Documento fiscal autorizado com sucesso!');
+      } else if (fiscalStatus === 'PROCESSING') {
+        setReprintMessage('⏳ Emissão fiscal em processamento no provedor...');
       } else {
-        const err = await resp.json();
-        setReprintMessage(`❌ ${err.detail || 'Erro ao solicitar emissão fiscal.'}`);
+        setReprintMessage('⏳ Emissão fiscal solicitada. Aguarde o processamento...');
       }
     } catch (error) {
       setReprintMessage('❌ Erro de rede ao solicitar emissão fiscal.');

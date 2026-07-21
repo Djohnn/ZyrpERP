@@ -9,6 +9,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
+from config.observability import system_metrics
 from monitoring.middleware import get_request_metrics, get_error_metrics, reset_metrics
 
 
@@ -62,27 +63,75 @@ class HealthCheckView(View):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ReadinessView(View):
-    """Readiness probe for Kubernetes."""
+    """Readiness probe — checks DB, cache, and outbox backlog."""
 
-    def get(self, request):
-        # Check if migrations are applied and app can serve traffic
-        db_ok = False
+    def _check_db(self):
         try:
             with connection.cursor() as cursor:
                 cursor.execute('SELECT 1')
-            db_ok = True
+            return True
         except Exception:
-            pass
+            return False
 
-        if not db_ok:
+    def _check_redis(self):
+        try:
+            cache_settings = settings.CACHES.get('default', {})
+            location = cache_settings.get('LOCATION', '')
+            if not location or 'LocMem' in cache_settings.get('BACKEND', ''):
+                return True
+            from redis import Redis
+            parsed = urlparse(location)
+            redis = Redis(
+                host=parsed.hostname,
+                port=parsed.port,
+                db=0,
+                socket_connect_timeout=2,
+            )
+            return redis.ping()
+        except Exception:
+            return False
+
+    def get(self, request):
+        db_ok = self._check_db()
+        redis_ok = self._check_redis()
+        services_ok = db_ok and redis_ok
+
+        if not services_ok:
             return JsonResponse(
-                {'status': 'not_ready', 'reason': 'database unavailable'},
+                {
+                    'status': 'not_ready',
+                    'reason': 'database unavailable' if not db_ok
+                              else 'cache unavailable',
+                },
                 status=503,
             )
 
-        return JsonResponse(
-            {'status': 'ready', 'timestamp': datetime.utcnow().isoformat() + 'Z'}
-        )
+        sm = system_metrics()
+        backlog_ok = sm['outbox']['pending'] < 100
+        if not backlog_ok:
+            return JsonResponse(
+                {
+                    'status': 'degraded',
+                    'reason': 'outbox backlog too large',
+                    'outbox': sm['outbox'],
+                },
+                status=503,
+            )
+
+        return JsonResponse({
+            'status': 'ready',
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'services': {
+                'database': 'ok' if db_ok else 'down',
+                'cache': 'ok' if redis_ok else 'down',
+            },
+            'outbox': {
+                'total_pending': sm['outbox']['pending'],
+                'oldest_pending': sm['outbox']['oldest_pending_at'],
+                'failed_count': sm['outbox']['failed'],
+                'status': 'ok',
+            },
+        })
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -132,6 +181,7 @@ class MetricsView(View):
             'cache': 'ok' if redis_ok else 'down',
             'request_metrics': metrics,
             'error_metrics': errors,
+            'system_metrics': system_metrics(),
         })
 
 

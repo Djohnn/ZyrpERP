@@ -90,6 +90,118 @@ def build_payment_dict(payment):
     }
 
 
+# ── Sprint 12 — Purchasing fiscal reconciliation ──────────────
+
+
+ENTRY_CFOPS = {'1102', '2102', '1202', '2202', '1403', '2403'}
+
+
+def _get_cfop_for_operation(tipo_movimento: str = 'interna') -> str:
+    return '1102' if tipo_movimento == 'interna' else '2102'
+
+
+class FiscalValidationIssue:
+    def __init__(self, field: str, message: str, severity: str = 'error'):
+        self.field = field
+        self.message = message
+        self.severity = severity
+
+    def as_dict(self):
+        return {'field': self.field, 'message': self.message, 'severity': self.severity}
+
+
+def validate_fiscal_config_for_receipt(receipt):
+    issues: list[FiscalValidationIssue] = []
+
+    po = receipt.purchase_order
+    supplier = po.supplier
+    branch = po.branch
+
+    emitter = resolve_emitter(branch)
+    if emitter is None:
+        issues.append(FiscalValidationIssue(
+            'emitter',
+            'Nenhum emitente fiscal configurado para esta filial.',
+        ))
+    elif not emitter.registered_at_provider:
+        issues.append(FiscalValidationIssue(
+            'emitter',
+            'Emitente fiscal não registrado no provedor.',
+            severity='warning',
+        ))
+
+    if not supplier.cnpj:
+        issues.append(FiscalValidationIssue(
+            'supplier',
+            'Fornecedor sem CNPJ cadastrado.',
+        ))
+
+    items = receipt.items.select_related(
+        'purchase_order_item__product',
+    ).all()
+
+    for item in items:
+        product = item.purchase_order_item.product
+        config = resolve_product_config(product)
+        if config is None:
+            issues.append(FiscalValidationIssue(
+                f'item.{product.sku}',
+                f'Produto {product.sku} sem configuração fiscal (CST/ICMS).',
+                severity='warning',
+            ))
+        elif not config.cst_icms:
+            issues.append(FiscalValidationIssue(
+                f'item.{product.sku}',
+                f'Produto {product.sku} sem CST ICMS.',
+            ))
+        if not product.ncm:
+            issues.append(FiscalValidationIssue(
+                f'item.{product.sku}',
+                f'Produto {product.sku} sem NCM cadastrado.',
+            ))
+
+    return issues
+
+
+@transaction.atomic
+def reconcile_receipt_fiscal(receipt, tenant, cfop=None):
+    issues = validate_fiscal_config_for_receipt(receipt)
+    errors = [i for i in issues if i.severity == 'error']
+    if errors:
+        return {
+            'document': None,
+            'issues': [e.as_dict() for e in errors],
+            'warnings': [i.as_dict() for i in issues if i.severity == 'warning'],
+        }
+
+    existing = FiscalDocument.all_objects.filter(
+        receipt=receipt,
+        is_active=True,
+    ).first()
+    if existing:
+        return {
+            'document': existing,
+            'issues': [],
+            'warnings': [],
+        }
+
+    effective_cfop = cfop or _get_cfop_for_operation()
+    doc = FiscalDocument.all_objects.create(
+        tenant=tenant,
+        direction=FiscalDocument.DIRECTION_INPUT,
+        purchase_order=receipt.purchase_order,
+        receipt=receipt,
+        cfop=effective_cfop,
+        status=FiscalDocument.STATUS_CONCLUDED,
+    )
+
+    return {
+        'document': doc,
+        'issues': [],
+        'warnings': [i.as_dict() for i in issues if i.severity == 'warning'],
+    }
+
+
 @transaction.atomic
 def emit_nfce(sale, tenant):
     existing = FiscalDocument.all_objects.filter(sale=sale, is_active=True).first()
@@ -140,11 +252,18 @@ def emit_document(doc):
 
 
 @transaction.atomic
+def _resolve_branch(doc):
+    if doc.sale_id:
+        return doc.sale.branch
+    if doc.purchase_order_id:
+        return doc.purchase_order.branch
+    if doc.receipt_id:
+        return doc.receipt.purchase_order.branch
+    return None
+
+
 def poll_fiscal_document(doc):
-    doc = FiscalDocument.all_objects.select_for_update().select_related(
-        'sale__branch',
-        'tenant',
-    ).get(pk=doc.pk)
+    doc = FiscalDocument.all_objects.select_for_update().get(pk=doc.pk)
     now = timezone.now()
     if doc.created_at and now - doc.created_at > POLLING_TIMEOUT:
         doc.status = FiscalDocument.STATUS_FAILED
@@ -158,7 +277,7 @@ def poll_fiscal_document(doc):
         doc.save(update_fields=['status', 'error_detail', 'updated_at'])
         return doc
 
-    emitter = resolve_emitter(doc.sale.branch)
+    emitter = resolve_emitter(_resolve_branch(doc))
     if emitter is None:
         doc.status = FiscalDocument.STATUS_FAILED
         doc.error_detail = 'Emitente fiscal não configurado para consulta'

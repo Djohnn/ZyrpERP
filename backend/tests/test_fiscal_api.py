@@ -102,7 +102,7 @@ def test_fiscal_webhook_queries_provider_instead_of_trusting_body(
     client,
     fiscal_sale_context,
 ):
-    from fiscal.models import FiscalDocument, FiscalEmitter
+    from fiscal.models import FiscalDocument
     from fiscal.ports import QueryResult
 
     ctx = fiscal_sale_context
@@ -120,13 +120,6 @@ def test_fiscal_webhook_queries_provider_instead_of_trusting_body(
     monkeypatch.setattr('fiscal.adapters.plugnotas.PlugNotasAdapter.query', fake_query)
 
     def _create_doc():
-        FiscalEmitter.all_objects.create(
-            tenant=ctx['tenant'],
-            branch=ctx['branch'],
-            provider='plugnotas',
-            cpf_cnpj='12345678000199',
-            registered_at_provider=True,
-        )
         return FiscalDocument.all_objects.create(
             tenant=ctx['tenant'],
             sale=ctx['sale'],

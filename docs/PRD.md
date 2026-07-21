@@ -802,7 +802,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 10 — Compras, Recebimento e Contas a Pagar
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-21.
 **Objetivo:** implementar reposição básica com pedido de compra, recebimento, entrada de estoque e obrigação financeira.
 **Entregável:** fluxo fornecedor → pedido → recebimento parcial/total → estoque → conta a pagar.
 
@@ -812,29 +812,29 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 10.1 Fundação de compras
 
-- [ ] Criar app `purchasing`.
-- [ ] Criar fornecedor, pedido de compra e itens.
-- [ ] Implementar aprovação de pedido e imutabilidade após aprovação.
+- [x] Criar app `purchasing`.
+- [x] Criar fornecedor, pedido de compra e itens.
+- [x] Implementar aprovação de pedido e imutabilidade após aprovação.
 
 #### 10.2 Recebimento e estoque
 
-- [ ] Criar recebimento e itens recebidos.
-- [ ] Permitir recebimento parcial.
-- [ ] Bloquear recebimento acima do pendente.
-- [ ] Gerar entrada de estoque idempotente.
+- [x] Criar recebimento e itens recebidos.
+- [x] Permitir recebimento parcial.
+- [x] Bloquear recebimento acima do pendente.
+- [x] Gerar entrada de estoque idempotente.
 
 #### 10.3 Contas a pagar
 
-- [ ] Criar obrigação financeira a partir do recebimento.
-- [ ] Garantir vínculo com fornecedor, pedido e recebimento.
-- [ ] Bloquear duplicidade por retry.
+- [x] Criar obrigação financeira a partir do recebimento.
+- [x] Garantir vínculo com fornecedor, pedido e recebimento.
+- [x] Bloquear duplicidade por retry.
 
 #### 10.4 API e aceite
 
-- [ ] Expor CRUD de fornecedor, pedido, aprovação e recebimento.
-- [ ] Testar cross-tenant, idempotência e regras de status.
-- [ ] Registrar evidências no relatório final da Sprint 10.
-- [ ] Criar commit final `feat: sprint 10 - compras recebimento contas a pagar`.
+- [x] Expor CRUD de fornecedor, pedido, aprovação e recebimento.
+- [x] Testar cross-tenant, idempotência e regras de status.
+- [x] Registrar evidências no relatório final da Sprint 10.
+- [x] Criar commit final `feat: sprint 10 - compras recebimento contas a pagar`.
 
 ### Sprint 11 — Financeiro, Fluxo de Caixa e Relatórios Operacionais
 

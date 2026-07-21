@@ -42,6 +42,8 @@ LOCAL_APPS = [
     'inventory',
     'sales',
     'fiscal',
+    'financial',
+    'purchasing',
     'monitoring',
 ]
 

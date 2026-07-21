@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -11,6 +12,8 @@ from django.views.decorators.csrf import csrf_exempt
 from config.observability import system_metrics
 from monitoring.middleware import get_error_metrics, get_request_metrics, reset_metrics
 
+logger = logging.getLogger(__name__)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class HealthCheckView(View):
@@ -23,7 +26,7 @@ class HealthCheckView(View):
                 cursor.execute('SELECT 1')
             db_ok = True
         except Exception:
-            pass
+            logger.warning('Health check database probe failed', exc_info=True)
 
         redis_ok = False
         try:
@@ -42,7 +45,7 @@ class HealthCheckView(View):
             else:
                 redis_ok = True
         except Exception:
-            pass
+            logger.warning('Health check cache probe failed', exc_info=True)
 
         overall = db_ok and redis_ok
         status_code = 200 if overall else 503
@@ -152,7 +155,7 @@ class MetricsView(View):
                 cursor.execute('SELECT 1')
             db_ok = True
         except Exception:
-            pass
+            logger.warning('Metrics database probe failed', exc_info=True)
 
         # Check Redis
         redis_ok = False
@@ -174,7 +177,7 @@ class MetricsView(View):
             else:
                 redis_ok = True
         except Exception:
-            pass
+            logger.warning('Metrics cache probe failed', exc_info=True)
 
         return JsonResponse({
             'database': 'ok' if db_ok else 'down',

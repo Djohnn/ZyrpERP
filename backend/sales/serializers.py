@@ -386,7 +386,9 @@ class ReturnItemInputSerializer(serializers.Serializer):
 
 
 class CreateSaleReturnSerializer(serializers.Serializer):
-    items = ReturnItemInputSerializer(many=True, min_length=1)
+    # DRF supports list-level validation kwargs when ``many=True``; its type stubs
+    # do not currently expose ``min_length`` on the child serializer constructor.
+    items = ReturnItemInputSerializer(many=True, min_length=1)  # type: ignore[call-arg]
     reason = serializers.CharField(min_length=1)
 
 

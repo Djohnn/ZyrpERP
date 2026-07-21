@@ -1,34 +1,10 @@
 import pytest
 
 
-@pytest.mark.django_db
-def test_sale_confirmed_outbox_handler_dispatches_fiscal_task(monkeypatch):
-    from fiscal.tasks import handle_sale_confirmed_outbox
+def test_sale_confirmed_outbox_does_not_trigger_automatic_fiscal_emission():
     from outbox.handlers import get_handler
-    from outbox.models import OutboxMessage
 
-    dispatched = []
-
-    def fake_delay(sale_id):
-        dispatched.append(sale_id)
-
-    monkeypatch.setattr('fiscal.tasks.handle_sale_completed.delay', fake_delay)
-
-    message = OutboxMessage.objects.create(
-        event_type='sales.sale.confirmed',
-        aggregate_type='Sale',
-        aggregate_id='sale-123',
-        payload={'sale_id': 'sale-123'},
-    )
-
-    assert get_handler('sales.sale.confirmed') is handle_sale_confirmed_outbox
-    result = handle_sale_confirmed_outbox(message)
-
-    assert dispatched == ['sale-123']
-    assert result == {
-        'sale_id': 'sale-123',
-        'task': 'fiscal.tasks.handle_sale_completed',
-    }
+    assert get_handler('sales.sale.confirmed') is None
 
 
 @pytest.mark.django_db

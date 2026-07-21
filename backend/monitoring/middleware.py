@@ -3,9 +3,9 @@ import time
 from django.utils.deprecation import MiddlewareMixin
 
 # Simple in-memory metrics storage (for production, use Redis/Prometheus)
-_request_counts = {}
-_request_latencies = {}
-_error_counts = {}
+_request_counts: dict[str, int] = {}
+_request_latencies: dict[str, list[float]] = {}
+_error_counts: dict[str, int] = {}
 
 
 class MetricsMiddleware(MiddlewareMixin):

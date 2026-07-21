@@ -131,10 +131,22 @@ class Command(BaseCommand):
 
                 with connection.cursor() as c:
                     c.execute(
-                        "INSERT INTO fiscal_fiscalemitter (id, tenant_id, branch_id, provider, cpf_cnpj, ie, registered_at_provider, registration_source, created_at, updated_at) "
-                        "SELECT %s, %s, %s, 'plugnotas', '00000000000000', '111111111111', true, 'manual', NOW(), NOW() "
-                        "WHERE NOT EXISTS (SELECT 1 FROM fiscal_fiscalemitter WHERE tenant_id=%s AND branch_id=%s AND provider='plugnotas')",
-                        [str(uuid.uuid4()), str(tenant.id), str(branch.id), str(tenant.id), str(branch.id)]
+                        "INSERT INTO fiscal_fiscalemitter "
+                        "(id, tenant_id, branch_id, provider, cpf_cnpj, ie, "
+                        "registered_at_provider, registration_source, created_at, updated_at) "
+                        "SELECT %s, %s, %s, 'plugnotas', '00000000000000', "
+                        "'111111111111', true, 'manual', NOW(), NOW() "
+                        "WHERE NOT EXISTS ("
+                        "SELECT 1 FROM fiscal_fiscalemitter "
+                        "WHERE tenant_id=%s AND branch_id=%s AND provider='plugnotas'"
+                        ")",
+                        [
+                            str(uuid.uuid4()),
+                            str(tenant.id),
+                            str(branch.id),
+                            str(tenant.id),
+                            str(branch.id),
+                        ],
                     )
 
             self.stdout.write(self.style.SUCCESS(

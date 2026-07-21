@@ -918,7 +918,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 13 — Pagamentos Integrados e Conciliação
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-21.
 **Objetivo:** evoluir de pagamento manual para contratos de provider, webhooks idempotentes e conciliação financeira.
 **Entregável:** app `payments` com provider fake, transações, webhooks, conciliação bruto/líquido e integração financeira.
 
@@ -928,31 +928,31 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 13.1 Fundação de pagamentos
 
-- [ ] Criar app `payments`.
-- [ ] Criar configuração de provider, intenção, transação, webhook e conciliação.
-- [ ] Manter pagamento externo/manual funcionando.
-- [ ] Proteger segredos de provider.
+- [x] Criar app `payments`.
+- [x] Criar configuração de provider, intenção, transação, webhook e conciliação.
+- [x] Manter pagamento externo/manual funcionando.
+- [x] Proteger segredos de provider.
 
 #### 13.2 Provider e webhooks
 
-- [ ] Definir contrato `PaymentProvider`.
-- [ ] Implementar provider fake determinístico.
-- [ ] Validar webhook e idempotência.
-- [ ] Separar autorização, captura, cancelamento e estorno.
+- [x] Definir contrato `PaymentProvider`.
+- [x] Implementar provider fake determinístico.
+- [x] Validar webhook e idempotência.
+- [x] Separar autorização, captura, cancelamento e estorno.
 
 #### 13.3 Conciliação financeira
 
-- [ ] Importar lote de conciliação.
-- [ ] Comparar valor bruto, taxa e líquido.
-- [ ] Gerar liquidação ou ajuste financeiro.
-- [ ] Sinalizar divergência para revisão manual.
+- [x] Importar lote de conciliação.
+- [x] Comparar valor bruto, taxa e líquido.
+- [x] Gerar liquidação ou ajuste financeiro.
+- [x] Sinalizar divergência para revisão manual.
 
 #### 13.4 Qualidade e aceite
 
-- [ ] Criar testes de provider, services, webhooks, conciliação e API.
-- [ ] Testar segredo ausente em logs/auditoria/outbox.
-- [ ] Registrar evidências no relatório final da Sprint 13.
-- [ ] Criar commit final `feat: sprint 13 - pagamentos conciliacao`.
+- [x] Criar testes de provider, services, webhooks, conciliação e API.
+- [x] Testar segredo ausente em logs/auditoria/outbox.
+- [x] Registrar evidências no relatório final da Sprint 13.
+- [x] Criar commit final `feat: sprint 13 - pagamentos conciliacao`.
 
 ### Sprint 14 — IA Readiness e Copiloto Somente Leitura
 

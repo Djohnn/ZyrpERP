@@ -206,6 +206,33 @@ def settle_receivable(**kwargs):
 
 
 @transaction.atomic
+def record_payment_reconciliation_effect(*, item):
+    """Record immutable fee cashflow once a payment settlement is confirmed."""
+    from financial.models import CashflowEntry
+
+    sale = item.transaction.intent.sale if item.transaction_id else None
+    branch = sale.branch if sale else None
+    if item.fee_amount <= 0:
+        return None
+    key = f'payment-reconciliation:{item.id}:fee'
+    entry, _ = CashflowEntry.all_objects.get_or_create(
+        tenant=item.tenant,
+        idempotency_key=key,
+        defaults={
+            'branch': branch,
+            'direction': 'outflow',
+            'status': 'realized',
+            'amount': item.fee_amount,
+            'effective_date': timezone.localdate(),
+            'description': f'Taxa de pagamento {item.provider_reference}',
+            'source_type': 'payment_fee',
+            'source_id': item.id,
+        },
+    )
+    return entry
+
+
+@transaction.atomic
 def record_sale_financial_effects(*, tenant, sale, actor=None):
     from financial.models import CashflowEntry, Receivable
     from sales.models import SalePayment

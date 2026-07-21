@@ -1,6 +1,6 @@
 # Sprint 18 Catalog Inventory and Purchasing Web Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Option 1 is locked; do not switch to superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Deliver complete web journeys for catalog maintenance, inventory visibility/movements and purchasing through receipt.
 

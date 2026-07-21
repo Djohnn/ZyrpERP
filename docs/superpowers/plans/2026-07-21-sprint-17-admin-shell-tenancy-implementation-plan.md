@@ -1,6 +1,6 @@
 # Sprint 17 Admin Shell and Tenancy Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Option 1 is locked; do not switch to superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Deliver a production-ready administrative shell for companies, branches, memberships, invitations, MFA policies and PDV devices.
 

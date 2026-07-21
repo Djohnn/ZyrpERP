@@ -1029,6 +1029,12 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 - [ ] Registrar evidências no relatório final da Sprint 15.
 - [ ] Criar commit final `feat: sprint 15 - saas comercial admin`.
 
+#### Protocolo de execução das Sprints 16–20
+
+**Opção registrada:** executar todas as sprints com `superpowers:subagent-driven-development` (opção 1), na ordem 16 → 17 → 18 → 19 → 20. Não solicitar novas decisões de arquitetura: specs e plans são autoritativos. Cada tarefa exige implementação com TDD, revisão de aderência à especificação e revisão de qualidade antes do avanço.
+
+**Orquestração:** [Plano mestre de execução Subagent-Driven](superpowers/plans/2026-07-21-sprints-16-20-subagent-execution-master-plan.md)
+
 ### Sprint 16 — Fundação Frontend e Contrato da API
 
 **Estado:** Planejada; spec e plan preparados em 2026-07-21.

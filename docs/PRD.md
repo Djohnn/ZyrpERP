@@ -721,7 +721,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 8 — Piloto, Observabilidade e Hardening
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-19.
 **Objetivo:** preparar um piloto controlado com segurança, operação, suporte e recuperação verificáveis.  
 **Entregável:** release candidata com SLOs iniciais, alertas, backup restaurado, runbooks e critérios de rollback.
 
@@ -731,41 +731,41 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 8.1 Checklist de piloto
 
-- [ ] Criar checklist de readiness do piloto.
-- [ ] Registrar responsáveis por Produto, Engenharia e Suporte.
-- [ ] Definir critérios objetivos de entrada e saída do piloto.
+- [x] Criar checklist de readiness do piloto.
+- [x] Registrar responsáveis por Produto, Engenharia e Suporte.
+- [x] Definir critérios objetivos de entrada e saída do piloto.
 
 #### 8.2 Health, readiness e smoke tests
 
-- [ ] Expor readiness com banco, Redis/cache e Outbox.
-- [ ] Criar smoke test backend.
-- [ ] Criar smoke test PDV/frontend.
-- [ ] Garantir correlation ID nas respostas críticas.
+- [x] Expor readiness com banco, Redis/cache e Outbox.
+- [x] Criar smoke test backend.
+- [x] Criar smoke test PDV/frontend.
+- [x] Garantir correlation ID nas respostas críticas.
 
 #### 8.3 Métricas, dashboards e alertas
 
-- [ ] Documentar painéis de API, Outbox, fiscal, PDV offline e dependências.
-- [ ] Implementar ou expor helpers de métricas seguras.
-- [ ] Definir thresholds iniciais como baseline de piloto.
+- [x] Documentar painéis de API, Outbox, fiscal, PDV offline e dependências.
+- [x] Implementar ou expor helpers de métricas seguras.
+- [x] Definir thresholds iniciais como baseline de piloto.
 
 #### 8.4 Backup, restore e runbooks
 
-- [ ] Criar script de backup sem segredos embutidos.
-- [ ] Criar script de restore verificável em ambiente descartável.
-- [ ] Criar runbook de backup/restore.
-- [ ] Criar runbook de incidentes SEV-1 a SEV-4.
-- [ ] Criar runbook de rollback.
+- [x] Criar script de backup sem segredos embutidos.
+- [x] Criar script de restore verificável em ambiente descartável.
+- [x] Criar runbook de backup/restore.
+- [x] Criar runbook de incidentes SEV-1 a SEV-4.
+- [x] Criar runbook de rollback.
 
 #### 8.5 Segurança e aceite
 
-- [ ] Executar scanner/grep de segredos.
-- [ ] Executar suíte backend, frontend/PDV disponível, Ruff, mypy e checks Django.
-- [ ] Registrar evidências no relatório final da Sprint 8.
-- [ ] Criar commit final `chore: sprint 8 - piloto observabilidade hardening`.
+- [x] Executar scanner/grep de segredos.
+- [x] Executar suíte backend, frontend/PDV disponível, Ruff, mypy e checks Django.
+- [x] Registrar evidências no relatório final da Sprint 8.
+- [x] Criar commit final `chore: sprint 8 - piloto observabilidade hardening`.
 
 ### Sprint 9 — Devoluções, Cancelamentos e Estornos
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-21.
 **Objetivo:** completar o ciclo pós-venda com fatos compensatórios auditáveis.
 **Entregável:** devolução parcial/total, cancelamento, reentrada de estoque, reembolso/estorno e integração fiscal quando aplicável.
 
@@ -775,34 +775,34 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 9.1 Domínio pós-venda
 
-- [ ] Criar modelos de devolução, item devolvido, reembolso e cancelamento.
-- [ ] Garantir venda confirmada imutável.
-- [ ] Bloquear devolução acima da quantidade vendida líquida.
+- [x] Criar modelos de devolução, item devolvido, reembolso e cancelamento.
+- [x] Garantir venda confirmada imutável.
+- [x] Bloquear devolução acima da quantidade vendida líquida.
 
 #### 9.2 Serviços transacionais
 
-- [ ] Implementar devolução parcial/total idempotente.
-- [ ] Reentrar estoque por movimento auditável.
-- [ ] Registrar reembolso em dinheiro, Pix ou cartão externo.
-- [ ] Implementar cancelamento total com compensações necessárias.
+- [x] Implementar devolução parcial/total idempotente.
+- [x] Reentrar estoque por movimento auditável.
+- [x] Registrar reembolso em dinheiro, Pix ou cartão externo.
+- [x] Implementar cancelamento total com compensações necessárias.
 
 #### 9.3 Fiscal e API
 
-- [ ] Solicitar cancelamento fiscal quando documento autorizado permitir.
-- [ ] Expor endpoints de devolução, cancelamento e consulta.
-- [ ] Retornar Problem Details para erros de regra.
-- [ ] Testar isolamento cross-tenant.
+- [~] Solicitar cancelamento fiscal quando documento autorizado permitir — *decidido: on-demand, nunca automático; operador solicita manualmente via interface futura.*
+- [x] Expor endpoints de devolução, cancelamento e consulta.
+- [x] Retornar Problem Details para erros de regra.
+- [x] Testar isolamento cross-tenant.
 
 #### 9.4 Qualidade e aceite
 
-- [ ] Criar testes de models, services e API.
-- [ ] Executar suíte focada e suíte completa.
-- [ ] Registrar evidências no relatório final da Sprint 9.
-- [ ] Criar commit final `feat: sprint 9 - devolucoes cancelamentos estornos`.
+- [x] Criar testes de models, services e API.
+- [x] Executar suíte focada e suíte completa.
+- [x] Registrar evidências no relatório final da Sprint 9.
+- [x] Criar commit final `feat: sprint 9 - devolucoes cancelamentos estornos`.
 
 ### Sprint 10 — Compras, Recebimento e Contas a Pagar
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-21.
 **Objetivo:** implementar reposição básica com pedido de compra, recebimento, entrada de estoque e obrigação financeira.
 **Entregável:** fluxo fornecedor → pedido → recebimento parcial/total → estoque → conta a pagar.
 
@@ -812,33 +812,33 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 10.1 Fundação de compras
 
-- [ ] Criar app `purchasing`.
-- [ ] Criar fornecedor, pedido de compra e itens.
-- [ ] Implementar aprovação de pedido e imutabilidade após aprovação.
+- [x] Criar app `purchasing`.
+- [x] Criar fornecedor, pedido de compra e itens.
+- [x] Implementar aprovação de pedido e imutabilidade após aprovação.
 
 #### 10.2 Recebimento e estoque
 
-- [ ] Criar recebimento e itens recebidos.
-- [ ] Permitir recebimento parcial.
-- [ ] Bloquear recebimento acima do pendente.
-- [ ] Gerar entrada de estoque idempotente.
+- [x] Criar recebimento e itens recebidos.
+- [x] Permitir recebimento parcial.
+- [x] Bloquear recebimento acima do pendente.
+- [x] Gerar entrada de estoque idempotente.
 
 #### 10.3 Contas a pagar
 
-- [ ] Criar obrigação financeira a partir do recebimento.
-- [ ] Garantir vínculo com fornecedor, pedido e recebimento.
-- [ ] Bloquear duplicidade por retry.
+- [x] Criar obrigação financeira a partir do recebimento.
+- [x] Garantir vínculo com fornecedor, pedido e recebimento.
+- [x] Bloquear duplicidade por retry.
 
 #### 10.4 API e aceite
 
-- [ ] Expor CRUD de fornecedor, pedido, aprovação e recebimento.
-- [ ] Testar cross-tenant, idempotência e regras de status.
-- [ ] Registrar evidências no relatório final da Sprint 10.
-- [ ] Criar commit final `feat: sprint 10 - compras recebimento contas a pagar`.
+- [x] Expor CRUD de fornecedor, pedido, aprovação e recebimento.
+- [x] Testar cross-tenant, idempotência e regras de status.
+- [x] Registrar evidências no relatório final da Sprint 10.
+- [x] Criar commit final `feat: sprint 10 - compras recebimento contas a pagar`.
 
 ### Sprint 11 — Financeiro, Fluxo de Caixa e Relatórios Operacionais
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-21.
 **Objetivo:** consolidar contas a pagar/receber, liquidações, fluxo de caixa e relatórios operacionais.
 **Entregável:** visão gerencial inicial por período, tenant, empresa e filial, preparada para futura IA somente leitura.
 
@@ -848,35 +848,35 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 11.1 Núcleo financeiro
 
-- [ ] Criar ou consolidar app `financial`.
-- [ ] Criar contas financeiras, recebíveis, pagáveis, liquidações e fluxo de caixa.
-- [ ] Garantir imutabilidade de lançamentos confirmados.
+- [x] Criar ou consolidar app `financial`.
+- [x] Criar contas financeiras, recebíveis, pagáveis, liquidações e fluxo de caixa.
+- [x] Garantir imutabilidade de lançamentos confirmados.
 
 #### 11.2 Integrações financeiras
 
-- [ ] Registrar efeitos financeiros de vendas.
-- [ ] Registrar efeitos financeiros de compras.
-- [ ] Implementar liquidação parcial/total.
-- [ ] Bloquear baixa acima do saldo.
+- [x] Registrar efeitos financeiros de vendas.
+- [x] Registrar efeitos financeiros de compras.
+- [x] Implementar liquidação parcial/total.
+- [x] Bloquear baixa acima do saldo.
 
 #### 11.3 Relatórios e exportações
 
-- [ ] Criar relatórios de vendas, caixa, estoque, financeiro e pendências fiscais/offline.
-- [ ] Adicionar filtros por período, filial e status.
-- [ ] Limitar exportações e proteger dados sensíveis.
+- [x] Criar relatórios de vendas, caixa, estoque, financeiro e pendências fiscais/offline.
+- [x] Adicionar filtros por período, filial e status.
+- [x] Limitar exportações e proteger dados sensíveis.
 
 #### 11.4 Preparação futura para IA
 
-- [ ] Documentar read models permitidos para RAG/copiloto futuro.
-- [ ] Classificar campos financeiros/fiscais sensíveis.
-- [ ] Manter IA fora da execução transacional.
+- [x] Documentar read models permitidos para RAG/copiloto futuro.
+- [x] Classificar campos financeiros/fiscais sensíveis.
+- [x] Manter IA fora da execução transacional.
 
 #### 11.5 Qualidade e aceite
 
-- [ ] Criar testes de models, services, relatórios e API.
-- [ ] Executar suíte focada e suíte completa.
-- [ ] Registrar evidências no relatório final da Sprint 11.
-- [ ] Criar commit final `feat: sprint 11 - financeiro fluxo caixa relatorios`.
+- [x] Criar testes de models, services, relatórios e API.
+- [x] Executar suíte focada e suíte completa.
+- [x] Registrar evidências no relatório final da Sprint 11.
+- [x] Criar commit final `feat: sprint 11 - financeiro fluxo caixa relatorios`.
 
 ### Sprint 12 — Pessoas, Clientes e Parceiros
 

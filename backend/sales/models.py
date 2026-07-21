@@ -231,3 +231,142 @@ class SalePayment(VersionedSalesModel):
         super().clean()
         if self.amount <= 0:
             raise ValidationError({'amount': 'Payment amount must be positive.'})
+
+
+class SaleReturn(VersionedSalesModel):
+    STATUS_CHOICES = [
+        ('draft', 'Rascunho'),
+        ('completed', 'Concluída'),
+        ('cancelled', 'Cancelada'),
+    ]
+
+    sale = models.ForeignKey(Sale, on_delete=models.PROTECT, related_name='returns')
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    idempotency_key = models.CharField(max_length=100, blank=True, default='')
+    payload_hash = models.CharField(max_length=64, blank=True, default='')
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'idempotency_key'],
+                condition=models.Q(idempotency_key__gt=''),
+                name='uniq_salereturn_tenant_idempotency',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.sale_id and self.tenant_id and self.sale.tenant_id != self.tenant_id:
+            raise ValidationError({'sale': 'Sale must belong to the same tenant.'})
+
+
+class SaleReturnItem(VersionedSalesModel):
+    sale_return = models.ForeignKey(
+        SaleReturn, on_delete=models.PROTECT, related_name='items'
+    )
+    sale_item = models.ForeignKey(
+        SaleItem, on_delete=models.PROTECT, related_name='return_items'
+    )
+    quantity = models.DecimalField(max_digits=18, decimal_places=6)
+    factor = models.DecimalField(max_digits=18, decimal_places=6, default=1)
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['created_at']
+
+    def clean(self):
+        super().clean()
+        if self.quantity <= 0:
+            raise ValidationError({'quantity': 'Quantity must be positive.'})
+        if self.factor <= 0:
+            raise ValidationError({'factor': 'Factor must be positive.'})
+        if (
+            self.sale_return_id
+            and self.tenant_id
+            and self.sale_return.tenant_id != self.tenant_id
+        ):
+            raise ValidationError(
+                {'sale_return': 'Sale return must belong to the same tenant.'}
+            )
+
+
+class SaleRefund(VersionedSalesModel):
+    METHOD_CHOICES = [
+        ('cash', 'Dinheiro'),
+        ('pix', 'Pix'),
+        ('card_external', 'Cartao externo'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pendente'),
+        ('completed', 'Concluído'),
+        ('failed', 'Falhou'),
+    ]
+
+    sale = models.ForeignKey(Sale, on_delete=models.PROTECT, related_name='refunds')
+    sale_return = models.ForeignKey(
+        SaleReturn, on_delete=models.PROTECT, null=True, blank=True, related_name='refunds'
+    )
+    method = models.CharField(max_length=30, choices=METHOD_CHOICES)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    idempotency_key = models.CharField(max_length=100, blank=True, default='')
+    payload_hash = models.CharField(max_length=64, blank=True, default='')
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'idempotency_key'],
+                condition=models.Q(idempotency_key__gt=''),
+                name='uniq_salerefund_tenant_idempotency',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.amount <= 0:
+            raise ValidationError({'amount': 'Refund amount must be positive.'})
+        if self.sale_id and self.tenant_id and self.sale.tenant_id != self.tenant_id:
+            raise ValidationError({'sale': 'Sale must belong to the same tenant.'})
+
+
+class SaleCancellation(VersionedSalesModel):
+    STATUS_CHOICES = [
+        ('draft', 'Rascunho'),
+        ('completed', 'Concluído'),
+        ('failed', 'Falhou'),
+    ]
+
+    sale = models.ForeignKey(Sale, on_delete=models.PROTECT, related_name='cancellations')
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    idempotency_key = models.CharField(max_length=100, blank=True, default='')
+    payload_hash = models.CharField(max_length=64, blank=True, default='')
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'idempotency_key'],
+                condition=models.Q(idempotency_key__gt=''),
+                name='uniq_salecancellation_tenant_idempotency',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.sale_id and self.tenant_id and self.sale.tenant_id != self.tenant_id:
+            raise ValidationError({'sale': 'Sale must belong to the same tenant.'})

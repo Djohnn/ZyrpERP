@@ -5,7 +5,6 @@ from django.utils import timezone
 
 from fiscal.models import FiscalDocument
 from fiscal.services import POLLING_INTERVAL, emit_nfce, poll_fiscal_document
-from outbox.handlers import register_handler
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +16,13 @@ BEAT_SCHEDULE = {
 }
 
 
-@register_handler('sales.sale.confirmed')
-def handle_sale_confirmed_outbox(message):
-    sale_id = message.payload.get('sale_id') or message.aggregate_id
-    handle_sale_completed.delay(str(sale_id))
-    return {'sale_id': str(sale_id), 'task': 'fiscal.tasks.handle_sale_completed'}
+# NFC-e emission is now triggered on demand via the request-fiscal API endpoint.
+# The outbox-triggered handler below is kept for reference but disabled.
+# @register_handler('sales.sale.confirmed')
+# def handle_sale_confirmed_outbox(message):
+#     sale_id = message.payload.get('sale_id') or message.aggregate_id
+#     handle_sale_completed.delay(str(sale_id))
+#     return {'sale_id': str(sale_id), 'task': 'fiscal.tasks.handle_sale_completed'}
 
 
 @shared_task(max_retries=3, default_retry_delay=60)

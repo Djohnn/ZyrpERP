@@ -84,7 +84,7 @@ warn_unused_ignores = true
 exclude = ["migrations", "\\.venv"]
 
 [[tool.mypy.overrides]]
-module = ["accounts.models", "outbox.models", "tenancy.models", "audit.models", "catalog.models", "inventory.models", "sales.models", "fiscal.models"]
+module = ["accounts.models", "outbox.models", "tenancy.models", "audit.models", "catalog.models", "inventory.models", "sales.models", "fiscal.models", "financial.models", "purchasing.models"]
 disable_error_code = ["var-annotated"]
 
 [[tool.mypy.overrides]]

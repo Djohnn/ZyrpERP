@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 
 from decouple import config
 from django.contrib.auth import get_user_model
@@ -35,7 +36,7 @@ class Command(BaseCommand):
             with transaction.atomic():
                 with connection.cursor() as cursor:
                     cursor.execute(
-                        "SELECT set_config('app.current_tenant_id', %s, true)",
+                        "SELECT set_config('app.current_tenant_id', %s, false)",
                         [str(tenant.id)],
                     )
 
@@ -127,6 +128,26 @@ class Command(BaseCommand):
                         'is_primary': True,
                     },
                 )
+
+                with connection.cursor() as c:
+                    c.execute(
+                        "INSERT INTO fiscal_fiscalemitter "
+                        "(id, tenant_id, branch_id, provider, cpf_cnpj, ie, "
+                        "registered_at_provider, registration_source, created_at, updated_at) "
+                        "SELECT %s, %s, %s, 'plugnotas', '00000000000000', "
+                        "'111111111111', true, 'manual', NOW(), NOW() "
+                        "WHERE NOT EXISTS ("
+                        "SELECT 1 FROM fiscal_fiscalemitter "
+                        "WHERE tenant_id=%s AND branch_id=%s AND provider='plugnotas'"
+                        ")",
+                        [
+                            str(uuid.uuid4()),
+                            str(tenant.id),
+                            str(branch.id),
+                            str(tenant.id),
+                            str(branch.id),
+                        ],
+                    )
 
             self.stdout.write(self.style.SUCCESS(
                 f'Dados E2E criados:\n'

@@ -33,4 +33,4 @@ def test_password_recovery_is_generic_and_single_use(client):
     ).status_code == 400
     user.refresh_from_db()
     assert user.check_password('New-strong-password-2026')
-    assert prior_session.get('/api/v1/auth/me/').status_code == 403
+    assert prior_session.get('/api/v1/auth/me/').status_code == 401

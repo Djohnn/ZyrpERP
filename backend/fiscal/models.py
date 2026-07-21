@@ -103,10 +103,37 @@ class FiscalDocument(TenantScopedModel, TimeStampedModel):
         (STATUS_FAILED, 'Falha técnica'),
     ]
 
+    DIRECTION_OUTPUT = 'OUTPUT'
+    DIRECTION_INPUT = 'INPUT'
+
+    DIRECTION_CHOICES = [
+        (DIRECTION_OUTPUT, 'Saída'),
+        (DIRECTION_INPUT, 'Entrada'),
+    ]
+
+    direction = models.CharField(
+        max_length=10, choices=DIRECTION_CHOICES, default=DIRECTION_OUTPUT,
+    )
     sale = models.ForeignKey(
         'sales.Sale',
         on_delete=models.PROTECT,
         related_name='fiscal_documents',
+        null=True,
+        blank=True,
+    )
+    purchase_order = models.ForeignKey(
+        'purchasing.PurchaseOrder',
+        on_delete=models.PROTECT,
+        related_name='fiscal_documents',
+        null=True,
+        blank=True,
+    )
+    receipt = models.ForeignKey(
+        'purchasing.PurchaseReceipt',
+        on_delete=models.PROTECT,
+        related_name='fiscal_documents',
+        null=True,
+        blank=True,
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     attempt_number = models.PositiveIntegerField(default=1)
@@ -140,4 +167,5 @@ class FiscalDocument(TenantScopedModel, TimeStampedModel):
         ]
 
     def __str__(self):
-        return f'{self.sale_id} attempt {self.attempt_number} [{self.status}]'
+        ref = self.sale_id or self.purchase_order_id or self.receipt_id
+        return f'{ref} attempt {self.attempt_number} [{self.status}]'

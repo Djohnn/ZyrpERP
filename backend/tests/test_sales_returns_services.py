@@ -1,0 +1,120 @@
+from decimal import Decimal
+
+import pytest
+from django.db import connection
+
+from inventory.models import StockBalance
+from sales.models import Sale, SaleItem
+from tenancy.context import reset_current_tenant_id, set_current_tenant_id
+
+
+def _run_in_tenant(tenant, callback):
+    token = set_current_tenant_id(tenant.id)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute('SET app.current_tenant_id = %s', [str(tenant.id)])
+        return callback()
+    finally:
+        reset_current_tenant_id(token)
+
+
+@pytest.mark.django_db
+class TestSaleReturnService:
+    def test_partial_return_reenters_stock(self, sale_context):
+        ctx = sale_context
+        from sales.services import create_sale_return
+
+        sale = Sale.all_objects.filter(tenant=ctx['tenant']).first()
+        sale_item = SaleItem.all_objects.filter(sale=sale).first()
+
+        def _test():
+            sale_return = create_sale_return(
+                tenant=ctx['tenant'],
+                sale=sale,
+                items=[{'sale_item_id': str(sale_item.id), 'quantity': Decimal('1')}],
+                reason='Devolução parcial',
+                idempotency_key='return-partial-1',
+            )
+            balance = StockBalance.all_objects.get(
+                tenant=ctx['tenant'],
+                product=sale_item.product,
+                location=ctx['location'],
+                lot=None,
+            )
+            assert sale_return.status == 'completed'
+            assert sale_return.items.count() == 1
+            assert balance.quantity == Decimal('4.000000')
+
+        _run_in_tenant(ctx['tenant'], _test)
+
+    def test_return_above_sold_quantity_raises(self, sale_context):
+        ctx = sale_context
+        from sales.services import InsufficientReturnableQuantity, create_sale_return
+
+        sale = Sale.all_objects.filter(tenant=ctx['tenant']).first()
+        sale_item = SaleItem.all_objects.filter(sale=sale).first()
+
+        def _test():
+            with pytest.raises(InsufficientReturnableQuantity):
+                create_sale_return(
+                    tenant=ctx['tenant'],
+                    sale=sale,
+                    items=[{'sale_item_id': str(sale_item.id), 'quantity': Decimal('99')}],
+                    reason='Devolução acima do permitido',
+                    idempotency_key='return-excess-1',
+                )
+
+        _run_in_tenant(ctx['tenant'], _test)
+
+    def test_idempotent_replay_returns_same_return(self, sale_context):
+        ctx = sale_context
+        from sales.services import create_sale_return
+
+        sale = Sale.all_objects.filter(tenant=ctx['tenant']).first()
+        sale_item = SaleItem.all_objects.filter(sale=sale).first()
+
+        def _test():
+            first = create_sale_return(
+                tenant=ctx['tenant'],
+                sale=sale,
+                items=[{'sale_item_id': str(sale_item.id), 'quantity': Decimal('1')}],
+                reason='Devolução idempotente',
+                idempotency_key='return-idem-1',
+            )
+            replay = create_sale_return(
+                tenant=ctx['tenant'],
+                sale=sale,
+                items=[{'sale_item_id': str(sale_item.id), 'quantity': Decimal('1')}],
+                reason='Devolução idempotente',
+                idempotency_key='return-idem-1',
+            )
+            assert replay.id == first.id
+            assert replay.status == 'completed'
+
+        _run_in_tenant(ctx['tenant'], _test)
+
+    def test_idempotent_replay_with_different_payload_raises(self, sale_context):
+        ctx = sale_context
+        from sales.services import DuplicateIdempotencyKey, create_sale_return
+
+        sale = Sale.all_objects.filter(tenant=ctx['tenant']).first()
+        sale_item = SaleItem.all_objects.filter(sale=sale).first()
+
+        def _test():
+            create_sale_return(
+                tenant=ctx['tenant'],
+                sale=sale,
+                items=[{'sale_item_id': str(sale_item.id), 'quantity': Decimal('1')}],
+                reason='Devolução idempotente',
+                idempotency_key='return-idem-conflict-1',
+            )
+            with pytest.raises(DuplicateIdempotencyKey):
+                create_sale_return(
+                    tenant=ctx['tenant'],
+                    sale=sale,
+                    items=[{'sale_item_id': str(sale_item.id), 'quantity': Decimal('2')}],
+                    reason='Payload diferente',
+                    idempotency_key='return-idem-conflict-1',
+                )
+
+        _run_in_tenant(ctx['tenant'], _test)

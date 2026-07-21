@@ -50,6 +50,7 @@ export function Sale() {
     saleNumber: string;
     data: any;
   } | null>(null);
+  const [hasFiscalConfig, setHasFiscalConfig] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -269,6 +270,14 @@ const paymentsPayload = payments.map(p => ({
       setItems([]);
       setPayments([]);
       setError('');
+
+      const branchId = localStorage.getItem('branch_id');
+      if (branchId) {
+        fetch(`/api/v1/fiscal/config/?branch=${branchId}`, { headers: authHeaders() })
+          .then(res => res.ok ? res.json() : { has_fiscal_config: false })
+          .then(data => setHasFiscalConfig(data.has_fiscal_config === true))
+          .catch(() => setHasFiscalConfig(false));
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Erro ao processar venda');
     } finally {
@@ -298,19 +307,76 @@ const paymentsPayload = payments.map(p => ({
 
   const handlePrintFiscal = async () => {
     if (!confirmationSale) return;
-    const html = buildReceiptHtml(confirmationSale.data);
-    const fileName = `cupom_fiscal_${confirmationSale.saleNumber}`;
-    const electronAPI = (window as any).electronAPI;
-    if (electronAPI?.printFiscalReceipt) {
-      await electronAPI.printFiscalReceipt({ html, fileName });
-    } else if (electronAPI?.printReceipt) {
-      await electronAPI.printReceipt({ html, fileName });
-    } else {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.print();
+    setProcessing(true);
+
+    const saleId = confirmationSale.id;
+    const headers = authHeaders();
+
+    try {
+      // Check if fiscal document already exists and is authorized
+      const statusResponse = await fetch(`/api/v1/sales/${saleId}/fiscal-status/`, { headers });
+
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        if (statusData.fiscal_status === 'CONCLUDED') {
+          // Already authorized — print directly with protocol/chave
+          const html = buildReceiptHtml(confirmationSale.data, {
+            fiscalStatus: 'autorizado',
+            protocolo: statusData.protocol,
+            chaveAcesso: statusData.xml_url || '',
+          });
+          const fileName = `cupom_fiscal_${confirmationSale.saleNumber}`;
+          const electronAPI = (window as any).electronAPI;
+          if (electronAPI?.printFiscalReceipt) {
+            await electronAPI.printFiscalReceipt({ html, fileName });
+          } else if (electronAPI?.printReceipt) {
+            await electronAPI.printReceipt({ html, fileName });
+          }
+          setConfirmationSale(null);
+          return;
+        }
+
+        if (statusData.fiscal_status === 'PENDING' || statusData.fiscal_status === 'PROCESSING') {
+          setError('Emissão fiscal já está em processamento. Verifique o status no histórico.');
+          return;
+        }
+
+        if (statusData.fiscal_status === 'REJECTED') {
+          setError(`Emissão fiscal foi rejeitada: ${statusData.error_detail}. Tente novamente no histórico.`);
+          return;
+        }
       }
+
+      // No existing doc or not authorized — request new emission
+      const requestResponse = await fetch(`/api/v1/sales/${saleId}/request-fiscal/`, {
+        method: 'POST',
+        headers: { ...headers, 'Idempotency-Key': crypto.randomUUID() },
+      });
+
+      const requestData = await requestResponse.json();
+
+      if (!requestResponse.ok) {
+        setError(requestData.detail || 'Erro ao solicitar emissão fiscal.');
+        return;
+      }
+
+      const fiscalStatus = requestData.fiscal_status;
+      const errorDetail = requestData.error_detail || '';
+
+      if (fiscalStatus === 'FAILED' || fiscalStatus === 'REJECTED') {
+        setError(`Emissão fiscal falhou: ${errorDetail || 'erro desconhecido'}`);
+      } else if (fiscalStatus === 'CONCLUDED') {
+        setConfirmationSale(null);
+        setError('');
+      } else if (fiscalStatus === 'PROCESSING') {
+        setError('Emissão fiscal em processamento. Acompanhe o status no histórico de vendas.');
+      } else {
+        setError('Emissão fiscal solicitada. Acompanhe o status no histórico de vendas.');
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Erro de rede ao solicitar emissão fiscal.');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -621,7 +687,7 @@ const paymentsPayload = payments.map(p => ({
         <SaleConfirmationToast
           saleId={confirmationSale.id}
           saleNumber={confirmationSale.saleNumber}
-          hasFiscalConfig={false}
+          hasFiscalConfig={hasFiscalConfig}
           onPrintFiscal={handlePrintFiscal}
           onPrintBalcao={handlePrintBalcao}
           onClose={() => setConfirmationSale(null)}

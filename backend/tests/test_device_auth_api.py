@@ -3,8 +3,8 @@ import uuid
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.test import Client
 from django.db import connection
+from django.test import Client
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 

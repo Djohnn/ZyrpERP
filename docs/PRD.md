@@ -838,7 +838,7 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 ### Sprint 11 — Financeiro, Fluxo de Caixa e Relatórios Operacionais
 
-**Estado:** Planejada; spec e plan preparados em 2026-07-18.
+**Estado:** Concluída em 2026-07-21.
 **Objetivo:** consolidar contas a pagar/receber, liquidações, fluxo de caixa e relatórios operacionais.
 **Entregável:** visão gerencial inicial por período, tenant, empresa e filial, preparada para futura IA somente leitura.
 
@@ -848,35 +848,35 @@ Em caso de conflito, o agente deve parar, informar a divergência e solicitar um
 
 #### 11.1 Núcleo financeiro
 
-- [ ] Criar ou consolidar app `financial`.
-- [ ] Criar contas financeiras, recebíveis, pagáveis, liquidações e fluxo de caixa.
-- [ ] Garantir imutabilidade de lançamentos confirmados.
+- [x] Criar ou consolidar app `financial`.
+- [x] Criar contas financeiras, recebíveis, pagáveis, liquidações e fluxo de caixa.
+- [x] Garantir imutabilidade de lançamentos confirmados.
 
 #### 11.2 Integrações financeiras
 
-- [ ] Registrar efeitos financeiros de vendas.
-- [ ] Registrar efeitos financeiros de compras.
-- [ ] Implementar liquidação parcial/total.
-- [ ] Bloquear baixa acima do saldo.
+- [x] Registrar efeitos financeiros de vendas.
+- [x] Registrar efeitos financeiros de compras.
+- [x] Implementar liquidação parcial/total.
+- [x] Bloquear baixa acima do saldo.
 
 #### 11.3 Relatórios e exportações
 
-- [ ] Criar relatórios de vendas, caixa, estoque, financeiro e pendências fiscais/offline.
-- [ ] Adicionar filtros por período, filial e status.
-- [ ] Limitar exportações e proteger dados sensíveis.
+- [x] Criar relatórios de vendas, caixa, estoque, financeiro e pendências fiscais/offline.
+- [x] Adicionar filtros por período, filial e status.
+- [x] Limitar exportações e proteger dados sensíveis.
 
 #### 11.4 Preparação futura para IA
 
-- [ ] Documentar read models permitidos para RAG/copiloto futuro.
-- [ ] Classificar campos financeiros/fiscais sensíveis.
-- [ ] Manter IA fora da execução transacional.
+- [x] Documentar read models permitidos para RAG/copiloto futuro.
+- [x] Classificar campos financeiros/fiscais sensíveis.
+- [x] Manter IA fora da execução transacional.
 
 #### 11.5 Qualidade e aceite
 
-- [ ] Criar testes de models, services, relatórios e API.
-- [ ] Executar suíte focada e suíte completa.
-- [ ] Registrar evidências no relatório final da Sprint 11.
-- [ ] Criar commit final `feat: sprint 11 - financeiro fluxo caixa relatorios`.
+- [x] Criar testes de models, services, relatórios e API.
+- [x] Executar suíte focada e suíte completa.
+- [x] Registrar evidências no relatório final da Sprint 11.
+- [x] Criar commit final `feat: sprint 11 - financeiro fluxo caixa relatorios`.
 
 ### Sprint 12 — Pessoas, Clientes e Parceiros
 

@@ -6,6 +6,7 @@ ROLE_CAPABILITIES = {
         'inventory.transfer', 'inventory.adjust', 'inventory.locations.manage',
         'sales.view', 'sales.sell', 'sales.cash.manage',
         'purchasing.view', 'purchasing.manage',
+        'financial.view', 'financial.manage',
     }),
     'manager': frozenset({
         'organization.read', 'users.read',
@@ -14,6 +15,7 @@ ROLE_CAPABILITIES = {
         'inventory.transfer', 'inventory.adjust', 'inventory.locations.manage',
         'sales.view', 'sales.sell', 'sales.cash.manage',
         'purchasing.view', 'purchasing.manage',
+        'financial.view', 'financial.manage',
     }),
     'operator': frozenset({
         'catalog.view', 'pricing.view',

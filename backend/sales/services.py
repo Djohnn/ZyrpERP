@@ -371,6 +371,9 @@ def create_counter_sale(
     cash_session.expected_amount = _money(cash_session.expected_amount + net_total)
     cash_session.version += 1
     cash_session.save(update_fields=['expected_amount', 'version', 'updated_at'])
+    from financial.services import record_sale_financial_effects
+
+    record_sale_financial_effects(tenant=tenant, sale=sale, actor=operator)
     _emit_sales_event(sale=sale, event_type='sales.sale.confirmed', actor=operator)
     return sale
 
